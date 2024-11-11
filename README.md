@@ -40,7 +40,7 @@ npm run build
 ```
 
 3.啟動後端
-```bash
+```bash(May need to be superuser)
 npm run start
 ```
 
