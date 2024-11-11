@@ -27,3 +27,24 @@ npm i
 4.done
 
 ## How to run
+1.建置前端
+```bash
+cd .\Frontend\
+npm run build
+```
+
+2.建置後端
+```bash
+cd ..\Backend\
+npm run build
+```
+
+3.啟動後端
+```bash
+npm run start
+```
+
+4.開啟瀏覽器，輸入網址
+```
+http://localhost/index.html
+```
