@@ -1,5 +1,11 @@
 {
   "dependencies": {
-    "express": "^4.21.1"
+    "@types/express": "^5.0.0",
+    "express": "^4.21.1",
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "node ./build/index.js"
   }
 }
