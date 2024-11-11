@@ -5,7 +5,7 @@
 ## How to start
 
 >注意!!!<br>
->請先安裝node.js
+>請先安裝node.js and npm
 
 1.將檔案下載下來
 ```bash
