@@ -5,7 +5,10 @@
 ## How to start
 
 >注意!!!<br>
->請先安裝node.js and npm
+>請先安裝node.js 以及 npm<br>
+> 並確保為以下版本以上<br>
+> node.js v20.12.0<br>
+> npm v10.5.0<br>
 
 1.將檔案下載下來
 ```bash
@@ -48,5 +51,3 @@ npm run start
 ```
 http://localhost/index.html
 ```
-
-test
