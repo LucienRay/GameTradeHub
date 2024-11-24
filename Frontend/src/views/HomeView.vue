@@ -1,9 +1,16 @@
+<template>
+  <div>
+    <h1>Home</h1>
+    <p>Welcome to the Home page</p>
+    <button>
+      <router-link to="/login">Login</router-link>
+    </button>
+  </div>
+
+</template>
+
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
 </script>
 
-<template>
-  <main>
-    <TheWelcome />
-  </main>
-</template>
+<style scoped>
+</style>
