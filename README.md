@@ -49,5 +49,5 @@ npm run start
 
 4.開啟瀏覽器，輸入網址
 ```
-http://localhost/index.html
+http://localhost
 ```
