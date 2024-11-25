@@ -30,13 +30,32 @@ APP.post('/api/login', async (request, response) => {
     const {username, password} = request.body
 
 
-    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM USER WHERE username = ? AND password = ?', [pool.escape(username), pool.escape(password)]);
+    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ? AND Password = ?', [username, password]);
 
-    if(queries.length === 1) {
+    console.log(queries)
+    if (queries.length === 1) {
         response.json({success: true})
     } else {
         response.json({success: false})
     }
+})
+
+APP.post('/api/register', async (request, response) => {
+    console.log(request.body)
+    const {username, password, ssn, nickname, phone, email} = request.body
+
+    const [query] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username])
+    console.log(query)
+    if(query.length===0){
+        await pool.execute(
+            'INSERT INTO users (ID, Password, SSN, Nickname, Phone, Email, Permission) VALUES (?, ?, ?, ?, ?, ?, 0)',
+            [username, password, ssn, nickname, phone, email]
+        )
+        response.json({success: true})
+    } else{
+        response.json({success: false})
+    }
+
 })
 
 APP.listen(80)
