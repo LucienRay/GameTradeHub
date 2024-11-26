@@ -1,6 +1,8 @@
 import express from 'express'
 import path from 'path'
 import mysql, {QueryResult, RowDataPacket} from 'mysql2/promise';
+import https from 'https';
+import fs from 'fs';
 
 const APP = express()
 
@@ -58,6 +60,13 @@ APP.post('/api/register', async (request, response) => {
 
 })
 
-APP.listen(80)
+// APP.listen(80)
+
+const options = {
+    key: fs.readFileSync('./ssl/cloudflare-origin.key'),
+    cert: fs.readFileSync('./ssl/cloudflare-origin.pem'),
+};
 
 
+// 啟動 HTTPS 伺服器
+https.createServer(options, APP).listen(443);
