@@ -40,6 +40,7 @@ onMounted(() => {
         });
       })
       .catch(() => {
+
         isAuthenticated.value = false; // 如果驗證失敗
       });
 });

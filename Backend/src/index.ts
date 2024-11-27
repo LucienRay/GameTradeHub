@@ -1,4 +1,4 @@
-import express, {Request, Response, NextFunction } from 'express'
+import express, {Request, Response, NextFunction, request} from 'express'
 import path from 'path'
 import mysql, {RowDataPacket} from 'mysql2/promise';
 import https from 'https';
@@ -38,20 +38,20 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next:NextF
     try {
         req.user = jwt.verify(token, SECRET_KEY); // 將用戶資料存入請求物件
         const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [(req.user as JwtPayload).username]);
-        if (queries.length === 0) {
-            res.sendStatus(403).json({ message: 'Token 無效' });
+        if (queries.length === 0 || (req.user as JwtPayload).ip !== req.ip) {
+            res.sendStatus(403);
             return;
         }
         next(); // 繼續處理
     } catch (err) {
-        res.sendStatus(403).json({ message: 'Token 無效或已過期' });
+        res.sendStatus(403);
         return;
     }
 };
 
-function SetNewAuthTokenInCookie(username: string, response: Response) {
+function SetNewAuthTokenInCookie(username: string, response: Response, request: Request) {
     // 生成 JWT
-    const token = jwt.sign({ username: username }, SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ username: username , ip:request.ip}, SECRET_KEY, { expiresIn: '1h' });
 
     // 設置到 Cookie
     response.cookie('authToken', token, {
@@ -97,7 +97,7 @@ APP.post('/api/login', async (request, response) => {
         response.sendStatus(401);
         return;
     }
-    SetNewAuthTokenInCookie(username, response);
+    SetNewAuthTokenInCookie(username, response, request);
 
     response.json({ success: true });
 })
@@ -114,7 +114,7 @@ APP.post('/api/register', async (request, response) => {
             [username, password, ssn, nickname, phone, email]
         )
 
-        SetNewAuthTokenInCookie(username, response);
+        SetNewAuthTokenInCookie(username, response, request);
         response.json({success: true})
     } else{
         response.json({success: false})
