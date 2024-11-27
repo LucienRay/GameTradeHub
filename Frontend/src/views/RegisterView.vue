@@ -21,6 +21,7 @@
 <script setup lang="ts">
   import axios from "axios";
   import { ref } from "vue";
+  import {useRouter} from "vue-router";
 
   const username = ref('');
   const password = ref('');
@@ -28,6 +29,7 @@
   const nickname = ref('');
   const phone = ref('');
   const email = ref('');
+  const router = useRouter();
 
   function register() {
     console.log('Register button clicked')
@@ -48,6 +50,7 @@
       }
     }).then((response) => {
       console.log(response.data);
+      router.push('/')
     }).catch((error) => {
       console.log(error);
     });

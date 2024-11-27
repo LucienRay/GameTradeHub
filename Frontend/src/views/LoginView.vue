@@ -13,7 +13,9 @@
 <script setup lang="ts">
   import axios from "axios";
   import { ref } from "vue";
+  import {useRouter} from "vue-router";
 
+  const router = useRouter();
   const username = ref('');
   const password = ref('');
   function login() {
@@ -26,7 +28,7 @@
         'Content-Type': 'application/json'
       }
     }).then((response) => {
-      console.log(response.data);
+      router.push('/')
     }).catch((error) => {
       console.log(error);
     });
