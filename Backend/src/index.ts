@@ -31,20 +31,20 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next:NextF
     const token = req.cookies.authToken;
 
     if (!token) {
-        res.status(401).json({ message: '未授權，請登入' });
-        return ;
+        res.sendStatus(401);
+        return;
     }
 
     try {
         req.user = jwt.verify(token, SECRET_KEY); // 將用戶資料存入請求物件
         const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [(req.user as JwtPayload).username]);
         if (queries.length === 0) {
-            res.status(403).json({ message: 'Token 無效' });
+            res.sendStatus(403).json({ message: 'Token 無效' });
             return;
         }
         next(); // 繼續處理
     } catch (err) {
-        res.status(403).json({ message: 'Token 無效或已過期' });
+        res.sendStatus(403).json({ message: 'Token 無效或已過期' });
         return;
     }
 };
@@ -94,10 +94,9 @@ APP.post('/api/login', async (request, response) => {
 
     console.log(queries)
     if (queries.length != 1) {
-        response.sendStatus(401).json({ message: '帳號或密碼錯誤' });
+        response.sendStatus(401);
         return;
     }
-
     SetNewAuthTokenInCookie(username, response);
 
     response.json({ success: true });
