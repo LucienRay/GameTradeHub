@@ -38,7 +38,7 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next:NextF
     try {
         req.user = jwt.verify(token, SECRET_KEY); // 將用戶資料存入請求物件
         const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [(req.user as JwtPayload).username]);
-        if (queries.length === 0 || (req.user as JwtPayload).ip !== req.ip) {
+        if (queries.length === 0 || (req.user as JwtPayload).ip !== req.headers['cf-connecting-ip']) {
             res.sendStatus(403);
             return;
         }
@@ -51,7 +51,7 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next:NextF
 
 function SetNewAuthTokenInCookie(username: string, response: Response, request: Request) {
     // 生成 JWT
-    const token = jwt.sign({ username: username , ip:request.ip}, SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ username: username , ip:request.headers['cf-connecting-ip']}, SECRET_KEY, { expiresIn: '1h' });
 
     // 設置到 Cookie
     response.cookie('authToken', token, {
