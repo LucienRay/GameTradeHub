@@ -1,7 +1,10 @@
 {
   "dependencies": {
     "@types/express": "^5.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.4",
     "typescript": "^5.6.3"
@@ -9,5 +12,10 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "start": "node ./build/index.js"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.7"
   }
 }
