@@ -6,6 +6,7 @@ import fs from 'fs';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import validator from 'validator';
 
 const APP = express()
 
@@ -23,6 +24,7 @@ const pool = mysql.createPool({
 const SECRET_KEY = '62d6be3277e5bdd1b73800f195bc4a67500088b638109f7323123a420f1a3433';
 const allowedOrigins = ['https://localhost', 'https://www.xn--rhy.tw'];
 
+
 interface AuthenticatedRequest extends Request {
     user?: string | JwtPayload; // 用戶資料存放於 req.user
 }
@@ -31,6 +33,7 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next:NextF
     const token = req.cookies.authToken;
 
     if (!token) {
+        console.log(token)
         res.sendStatus(401);
         return;
     }
@@ -60,6 +63,57 @@ function SetNewAuthTokenInCookie(username: string, response: Response, request: 
         sameSite: 'strict',
         maxAge: 3600000   // 1 小時
     })
+}
+
+function validatePassword(password:string):boolean {
+    const rules = {minLength: 8,
+                   minLowercase: 1,
+                   minUppercase: 1,
+                   minNumbers: 1,
+                   minSymbols: 1, };
+    return password.length<=20 && validator.isStrongPassword(password, rules);
+}
+
+function validateTaiwanID(id:string):boolean {
+    // 檢查基本格式：1 個大寫英文字母 + 9 位數字
+    const regex = /^[A-Z][1-2]\d{8}$/;
+    if (!regex.test(id)) {
+        return false; // 格式不符
+    }
+
+    // 英文字母對應數值 (轉換表)
+    const letterValues = {
+        A: 10, B: 11, C: 12, D: 13, E: 14, F: 15, G: 16, H: 17, I: 34, J: 18, K: 19, L: 20,
+        M: 21, N: 22, O: 35, P: 23, Q: 24, R: 25, S: 26, T: 27, U: 28, V: 29, W: 30, X: 31,
+        Y: 32, Z: 33,
+    };
+
+    // 取得字母數值
+    const letter = id[0];
+    const letterValue = letterValues[letter as keyof typeof letterValues];
+
+    // 分解字母數值 (a1 和 a2)
+    const a1 = Math.floor(letterValue / 10); // 十位數
+    const a2 = letterValue % 10;            // 個位數
+
+    // 取得後 9 位數字
+    const digits = id.slice(1).split("").map(Number);
+
+    // 計算公式 N
+    const weights = [8, 7, 6, 5, 4, 3, 2, 1, 1]; // 加權值
+    let sum = a1 + a2 * 9; // 字母對應加權計算
+    for (let i = 0; i < digits.length; i++) {
+        sum += digits[i] * weights[i];
+    }
+
+    // 檢查是否整除 10
+    return sum % 10 === 0;
+}
+
+function validateTaiwanPhoneNumber(phoneNumber:string):boolean {
+    // 檢查格式是否符合：09 開頭 + 8 位數字
+    const regex = /^09\d{8}$/;
+    return regex.test(phoneNumber);
 }
 
 APP.use(cors({
@@ -106,19 +160,39 @@ APP.post('/api/register', async (request, response) => {
     console.log(request.body)
     const {username, password, ssn, nickname, phone, email} = request.body
 
-    const [query] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username])
-    console.log(query)
-    if(query.length===0){
-        await pool.execute(
-            'INSERT INTO users (ID, Password, SSN, Nickname, Phone, Email, Permission) VALUES (?, ?, ?, ?, ?, ?, 0)',
-            [username, password, ssn, nickname, phone, email]
-        )
+    const validationResults = {
+        username: true,
+        password: true,
+        ssn: true,
+        nickname: true,
+        phone: true,
+        email: true
+    };
 
-        SetNewAuthTokenInCookie(username, response, request);
-        response.json({success: true})
-    } else{
-        response.json({success: false})
+    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
+
+    validationResults.username = username.length>=8 && username.length<=20 && queries.length === 0;
+    validationResults.password = validatePassword(password);
+    validationResults.ssn = validateTaiwanID(ssn);
+    validationResults.nickname = nickname.length>0 && nickname.length<=20;
+    validationResults.phone = validateTaiwanPhoneNumber(phone);
+    validationResults.email = validator.isEmail(email);
+
+    if (Object.values(validationResults).includes(false)) {
+        response.status(400).json({
+            success: false,
+            validationResults: validationResults
+        });
+        return;
     }
+
+    await pool.execute(
+        'INSERT INTO users (ID, Password, SSN, Nickname, Phone, Email, Permission) VALUES (?, ?, ?, ?, ?, ?, 0)',
+        [username, password, ssn, nickname, phone, email]
+    )
+
+    SetNewAuthTokenInCookie(username, response, request);
+    response.json({success: true})
 
 })
 
