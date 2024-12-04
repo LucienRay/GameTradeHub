@@ -1,92 +1,264 @@
 <template>
-  <div>
-    <h1>Register</h1>
-    <label for="username">Username</label><br />
-    <input type="text" v-model="username" required /><br />
-    <p v-if="errors.username" class="errorHint">Username must contain at least 8 characters at most 20 characters.</p>
+  <div class="register-container">
+    <div class="register-card">
+      <h1 class="register-title">Register</h1>
+      <form @submit.prevent="register" class="register-form">
+        <!-- Username -->
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+              type="text"
+              id="username"
+              v-model="username"
+              placeholder="Enter your username"
+              class="input-field"
+              required
+          />
+          <p v-if="errors.username" class="errorHint">
+            Username must contain at least 8 characters and at most 20 characters.
+          </p>
+        </div>
 
-    <label for="password">Password</label><br />
-    <input type="password" v-model="password" required /><br />
-    <p v-if="errors.password" class="errorHint">Password must contain at least 8 characters, including uppercase, lowercase letters, numbers, and special characters.</p>
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+              type="password"
+              id="password"
+              v-model="password"
+              placeholder="Enter your password"
+              class="input-field"
+              required
+          />
+          <p v-if="errors.password" class="errorHint">
+            Password must contain at least 8 characters, including uppercase, lowercase letters, numbers, and special characters.
+          </p>
+        </div>
 
-    <label for="ssn">SSN</label><br />
-    <input type="text" v-model="ssn"required /><br />
-    <p v-if="errors.ssn" class="errorHint">SSN is not valid.</p>
+        <!-- SSN -->
+        <div class="form-group">
+          <label for="ssn">SSN</label>
+          <input
+              type="text"
+              id="ssn"
+              v-model="ssn"
+              placeholder="Enter your SSN"
+              class="input-field"
+              required
+          />
+          <p v-if="errors.ssn" class="errorHint">SSN is not valid.</p>
+        </div>
 
-    <label for="nickname">Nickname</label><br />
-    <input type="text" v-model="nickname" required /><br />
-    <p v-if="errors.nickname" class="errorHint">Nickname should not be empty.</p>
+        <!-- Nickname -->
+        <div class="form-group">
+          <label for="nickname">Nickname</label>
+          <input
+              type="text"
+              id="nickname"
+              v-model="nickname"
+              placeholder="Enter your nickname"
+              class="input-field"
+              required
+          />
+          <p v-if="errors.nickname" class="errorHint">Nickname should not be empty.</p>
+        </div>
 
-    <label for="phone">Phone</label><br />
-    <input type="text" v-model="phone" required /><br />
-    <p v-if="errors.phone" class="errorHint">Phone is not valid.</p>
+        <!-- Phone -->
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input
+              type="text"
+              id="phone"
+              v-model="phone"
+              placeholder="Enter your phone number"
+              class="input-field"
+              required
+          />
+          <p v-if="errors.phone" class="errorHint">Phone is not valid.</p>
+        </div>
 
-    <label for="email">Email</label><br />
-    <input type="email" v-model="email" required /><br />
-    <p v-if="errors.email" class="errorHint">Email is not valid.</p>
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+              type="email"
+              id="email"
+              v-model="email"
+              placeholder="Enter your email"
+              class="input-field"
+              required
+          />
+          <p v-if="errors.email" class="errorHint">Email is not valid.</p>
+        </div>
 
-    <button @click="register">Register</button>
+        <button type="submit" class="btn register-btn">Register</button>
+      </form>
+    </div>
   </div>
 </template>
 
-
 <script setup lang="ts">
-  import axios from "axios";
-  import { ref } from "vue";
-  import {useRouter} from "vue-router";
+import axios from "axios";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
-  const username = ref('');
-  const password = ref('');
-  const ssn = ref('');
-  const nickname = ref('');
-  const phone = ref('');
-  const email = ref('');
-  const router = useRouter();
-  const errors = ref({
-    username: false,
-    password: false,
-    ssn: false,
-    nickname: false,
-    phone: false,
-    email: false,
-  });
+const username = ref('');
+const password = ref('');
+const ssn = ref('');
+const nickname = ref('');
+const phone = ref('');
+const email = ref('');
+const router = useRouter();
+const errors = ref({
+  username: false,
+  password: false,
+  ssn: false,
+  nickname: false,
+  phone: false,
+  email: false,
+});
 
-
-
-  function register() {
-    console.log('Register button clicked')
-    if(username.value === '' || password.value === '' || ssn.value === '' || nickname.value === '' || phone.value === '' || email.value === '') {
-      alert('Please fill in all fields');
-      return;
-    }
-    axios.post('/api/register', {
-      username: username.value,
-      password: password.value,
-      ssn: ssn.value,
-      nickname: nickname.value,
-      phone: phone.value,
-      email: email.value
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }).then((response) => {
-      console.log(response.data);
-      router.push('/')
-    }).catch((error) => {
-      const errorResponse = error.response.data.validationResults;
-      errors.value.username = !errorResponse.username;
-      errors.value.password = !errorResponse.password;
-      errors.value.ssn = !errorResponse.ssn;
-      errors.value.nickname = !errorResponse.nickname;
-      errors.value.phone = !errorResponse.phone;
-      errors.value.email = !errorResponse.email;
-    });
+function register() {
+  console.log('Register button clicked')
+  if(username.value === '' || password.value === '' || ssn.value === '' || nickname.value === '' || phone.value === '' || email.value === '') {
+    alert('Please fill in all fields');
+    return;
   }
+  axios.post('/api/register', {
+    username: username.value,
+    password: password.value,
+    ssn: ssn.value,
+    nickname: nickname.value,
+    phone: phone.value,
+    email: email.value
+  }, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then((response) => {
+    console.log(response.data);
+    router.push('/')
+  }).catch((error) => {
+    const errorResponse = error.response.data.validationResults;
+    errors.value.username = !errorResponse.username;
+    errors.value.password = !errorResponse.password;
+    errors.value.ssn = !errorResponse.ssn;
+    errors.value.nickname = !errorResponse.nickname;
+    errors.value.phone = !errorResponse.phone;
+    errors.value.email = !errorResponse.email;
+  });
+}
 </script>
 
 <style scoped>
+/* 全局容器樣式 */
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 註冊卡片樣式 */
+.register-card {
+  background-color: #ffffff;
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+}
+
+/* 註冊標題樣式 */
+.register-title {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+/* 表單樣式 */
+.register-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 表單組樣式 */
+.form-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+/* 標籤樣式 */
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  color: #34495e;
+}
+
+/* 輸入框樣式 */
+.input-field {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-field:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+  outline: none;
+}
+
+/* 錯誤提示樣式 */
 .errorHint {
-  color: red;
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+/* 按鈕樣式 */
+.btn {
+  padding: 12px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  color: #fff;
+}
+
+/* 註冊按鈕特定樣式 */
+.register-btn {
+  background-color: #2ecc71;
+}
+
+.register-btn:hover {
+  background-color: #27ae60;
+}
+
+/* 響應式調整 */
+@media (max-width: 600px) {
+  .register-card {
+    padding: 30px 20px;
+  }
+
+  .register-title {
+    font-size: 2rem;
+  }
+
+  .input-field {
+    padding: 10px 12px;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+  }
 }
 </style>
