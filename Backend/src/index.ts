@@ -136,8 +136,13 @@ APP.get('/', (request, response) => {
 })
 
 APP.get('*', (request, response) => {
-    response.sendFile(path.join(__dirname, 'www', request.path))
-})
+    const filePath = path.join(__dirname, 'www', request.path);
+    if (fs.existsSync(filePath)) {
+        response.sendFile(filePath);
+    } else {
+        response.sendFile(path.join(__dirname, 'www', 'index.html'))
+    }
+});
 
 APP.post('/api/login', async (request, response) => {
     console.log(request.body)
