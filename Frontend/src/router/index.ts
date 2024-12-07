@@ -21,7 +21,10 @@ const router = createRouter({
       name: 'register',
       component: RegisterView,
     },
-
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
+    },
   ],
 })
 

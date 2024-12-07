@@ -135,12 +135,16 @@ APP.get('/', (request, response) => {
     response.sendFile(path.join(__dirname, 'www', 'index.html'))
 })
 
-APP.get('*', (request, response) => {
-    const filePath = path.join(__dirname, 'www', request.path);
+APP.get('*', (req, res) => {
+    if (req.path.includes('..')) {
+        res.status(403).send('Forbidden')
+    }
+    const filePath = path.join(__dirname, 'www', req.path);
+
     if (fs.existsSync(filePath)) {
-        response.sendFile(filePath);
+        res.sendFile(filePath)
     } else {
-        response.sendFile(path.join(__dirname, 'www', 'index.html'))
+        res.sendFile(path.join(__dirname, 'www', 'index.html'))
     }
 });
 
