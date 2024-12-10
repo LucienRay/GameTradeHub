@@ -32,7 +32,7 @@ const suggestions = ref<string[]>([
   "The Witcher 3",
   "Stardew Valley",
 ]);
-const showSuggestions = ref(true);
+const showSuggestions = ref(false);
 
 const filteredSuggestions = computed(() =>
   suggestions.value.filter((suggestion) =>
@@ -60,7 +60,6 @@ const hideSuggestions = () => {
 <style scoped>
 .search-bar-container {
   display: flex;
-  /* flex-direction: column; */
   justify-content: center; 
   align-items: center; 
   margin-left: 15%; 
