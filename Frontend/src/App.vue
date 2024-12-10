@@ -3,8 +3,7 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <ToolBar class="toolbar"/>
-  <RouterView />
+	<RouterView />
 </template>
 
 <style scoped>

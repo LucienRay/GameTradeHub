@@ -1,23 +1,8 @@
-<template>
-  <div class="container">
-    <h1 class="title">Home</h1>
-    <p class="welcome">Welcome to the Home page</p>
-
-    <div v-if="isAuthenticated" class="auth-section">
-      <h2 class="subtitle">這是只有登入後才會看到的畫面</h2>
-      <p class="greeting">歡迎回來，{{ Nickname }}！</p>
-      <button class="btn logout-btn" @click="logout">Logout</button>
+<template>  
+    <div class="container">
+        <ToolBar class="toolbar"/>
+        <SearchBar class="search-bar"/>
     </div>
-
-    <div v-else class="auth-buttons">
-      <router-link to="/login">
-        <button class="btn primary-btn">Login</button>
-      </router-link>
-      <router-link to="/register">
-        <button class="btn secondary-btn">Register</button>
-      </router-link>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -58,14 +43,12 @@ function logout() {
 <style scoped>
 /* 全局容器樣式 */
 .container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  text-align: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(180deg, #2A475E, #1B2838);
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+    justify-content: center;
+    align-items: center;
 }
 
 /* 標題樣式 */
