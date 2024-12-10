@@ -1,138 +1,114 @@
-<template>  
-    <div class="container">
-        <ToolBar class="toolbar"/>
-        <SearchBar class="search-bar"/>
-    </div>
+<template>
+  <div class="container">
+      <ToolBar class="toolbar"/>
+      <SearchBar class="search-bar"/>
+      <div class="grid-container">
+          <div v-for="game in games" :key="game.name" class="button-container">
+              <img v-on:click="routeToGame(game.name)" :src="game.imageSrc" class="button-image" />
+              <div class="button-text">{{ game.name }}</div>
+          </div>
+      </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
+const games = ref([
+{ name: 'Apex', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Game 2', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Game 3', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Game 4', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Game 5', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Game 6', imageSrc: '/public/ApexLogo.jpg' }
+]);
 
 onMounted(() => {
-  // 驗證用戶登入狀態
-  axios.post('/api/auth')
-      .then(response => {
-        axios.post('/api/get/userINFO').then(response => {
-          console.log(response.data);
-          Nickname.value = response.data.Nickname;
-          isAuthenticated.value = true;
-        }).catch(error => {
-          isAuthenticated.value = false;
-          console.log(error);
-        });
-      })
-      .catch(() => {
-        isAuthenticated.value = false; // 如果驗證失敗
+// 驗證用戶登入狀態
+axios.post('/api/auth')
+    .then(response => {
+      axios.post('/api/get/userINFO').then(response => {
+        console.log(response.data);
+        Nickname.value = response.data.Nickname;
+        isAuthenticated.value = true;
+      }).catch(error => {
+        isAuthenticated.value = false;
+        console.log(error);
       });
+    })
+    .catch(() => {
+      isAuthenticated.value = false; // 如果驗證失敗
+    });
 });
 
 function logout() {
-  axios.post('/api/logout')
-      .then(() => {
-        isAuthenticated.value = false;
-      })
-      .catch(() => {
-        console.log('Logout failed');
-      });
+axios.post('/api/logout')
+    .then(() => {
+      isAuthenticated.value = false;
+    })
+    .catch(() => {
+      console.log('Logout failed');
+    });
+}
+
+function routeToGame(gameName: string) {
+    alert(`Routing to ${gameName} `);
+    // router.push('/store')
 }
 </script>
 
 <style scoped>
 /* 全局容器樣式 */
 .container {
-    background: linear-gradient(180deg, #2A475E, #1B2838);
-    height: 100vh;
-    width: 100%;
-    margin: 0;
-    justify-content: center;
-    align-items: center;
-}
-
-/* 標題樣式 */
-.title {
-  font-size: 3rem;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-/* 歡迎文字樣式 */
-.welcome {
-  font-size: 1.2rem;
-  color: #555;
-  margin-bottom: 30px;
-}
-
-/* 認證區塊樣式 */
-.auth-section {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-}
-
-.subtitle {
-  font-size: 1.8rem;
-  color: #2c3e50;
-  margin-bottom: 15px;
-}
-
-.greeting {
-  font-size: 1.2rem;
-  color: #34495e;
-  margin-bottom: 25px;
-}
-
-/* 按鈕樣式 */
-.btn {
-  padding: 10px 20px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin: 5px;
-}
-
-.primary-btn {
-  background-color: #3498db;
-  color: #fff;
-}
-
-.primary-btn:hover {
-  background-color: #2980b9;
-}
-
-.secondary-btn {
-  background-color: #2ecc71;
-  color: #fff;
-}
-
-.secondary-btn:hover {
-  background-color: #27ae60;
-}
-
-.logout-btn {
-  background-color: #e74c3c;
-  color: #fff;
-}
-
-.logout-btn:hover {
-  background-color: #c0392b;
-}
-
-/* 認證按鈕容器樣式 */
-.auth-buttons {
-  display: flex;
+  background: linear-gradient(180deg, #2A475E, #1B2838);
+  height: 100vh;
+  width: 100%;
+  margin: 0;
   justify-content: center;
-  gap: 15px;
+  align-items: center;
 }
 
-/* 調整 router-link 內按鈕的樣式 */
-.router-link {
-  text-decoration: none;
+.grid-container {
+width: 70%;
+margin-left: 15%;
+display: flex;
+flex-wrap: wrap;
+}
+
+.button-container {
+margin-top: 35px;
+flex: 0 0 25%;
+width: 230px;
+height: 120px;
+position: relative;
+transition: 0.3s;
+}
+
+.button-container:hover {
+transform: translate(0, -10px);
+}
+
+.button-image {
+object-fit: cover;
+width: 220px;
+height: 120px;
+display: block;
+filter: blur(4px);
+border-radius: 25px;
+}
+
+.button-text {
+position: absolute;
+bottom: 65%;
+left: 8%;
+font-size: 24px; 
+color: white;
+text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
+text-align: left;
 }
 </style>
