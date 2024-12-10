@@ -1,9 +1,14 @@
 <template>
+    
     <div class="search-bar-container">
+      <button class="search-bar-button">首頁</button>
+      <button class="search-bar-button">我的訂單</button>
+      <button class="search-bar-button">訂單管理</button>
+      <button class="search-bar-button">個人資料</button>
         <input
         type="text"
         v-model="searchQuery"
-        placeholder="Search the store"
+        placeholder="搜尋"
         @input="onSearch"
         @focus="showSuggestions = true"
         @blur="hideSuggestions"
@@ -114,5 +119,21 @@ const hideSuggestions = () => {
 
 .search-suggestions li:hover {
   background-color: #66c0f4;
+}
+
+.search-bar-button {
+  margin: 5px;
+  background: none;
+  border: none;
+  padding: 10px 10px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #efefef;
+  transition: color 0.3s;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+}
+
+.search-bar-button:hover {
+  color: #007bff; 
 }
 </style>

@@ -21,11 +21,11 @@ const Nickname = ref('');
 const isAuthenticated = ref(false);
 const games = ref([
 { name: 'Apex', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Game 2', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Game 3', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Game 4', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Game 5', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Game 6', imageSrc: '/public/ApexLogo.jpg' }
+{ name: 'Cyberpunk 2077', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Elden Ring', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Counter-Strike 2', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'Dota 2', imageSrc: '/public/ApexLogo.jpg' },
+{ name: 'The Witcher 3', imageSrc: '/public/ApexLogo.jpg' }
 ]);
 
 onMounted(() => {
@@ -110,5 +110,6 @@ font-size: 24px;
 color: white;
 text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
 text-align: left;
+font-weight: bold;
 }
 </style>
