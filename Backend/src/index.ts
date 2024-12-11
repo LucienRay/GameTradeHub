@@ -136,7 +136,7 @@ APP.get('/', (request, response) => {
 })
 
 APP.get('*', (req, res) => {
-    if (req.path.includes('..')) {
+    if (req.path.includes('..') || decodeURIComponent(req.path).includes('..')) {
         res.status(403).send('Forbidden')
     }
     const filePath = path.join(__dirname, 'www', req.path);
