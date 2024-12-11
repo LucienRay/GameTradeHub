@@ -7,6 +7,7 @@ import jwt, {JwtPayload} from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import validator from 'validator';
+import mime from 'mime';
 
 const APP = express()
 
@@ -33,7 +34,6 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next:NextF
     const token = req.cookies.authToken;
 
     if (!token) {
-        console.log(token)
         res.sendStatus(401);
         return;
     }
@@ -130,7 +130,6 @@ APP.use(cors({
 APP.use(express.json())
 APP.use(cookieParser());
 
-
 APP.get('/', (request, response) => {
     response.sendFile(path.join(__dirname, 'www', 'index.html'))
 })
@@ -139,7 +138,13 @@ APP.get('*', (req, res) => {
     if (req.path.includes('..') || decodeURIComponent(req.path).includes('..')) {
         res.status(403).send('Forbidden')
     }
-    const filePath = path.join(__dirname, 'www', req.path);
+    let filePath = '';
+
+    if(req.path.includes('images/')) {
+        filePath = path.join(__dirname, '..', req.path);
+    } else{
+        filePath = path.join(__dirname, 'www', req.path);
+    }
 
     if (fs.existsSync(filePath)) {
         res.sendFile(filePath)
@@ -228,6 +233,22 @@ APP.post('/api/get/userINFO', authenticate, async (req:AuthenticatedRequest, res
     const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
     res.json(queries[0]);
 })
+
+APP.post('/api/get/GameINFO', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT g.ID, g.Name, g.Platform, i.path AS Image
+             FROM games g
+             LEFT JOIN images i
+             ON g.Image_ID = i.ID;`
+        );
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 
 // APP.listen(80)

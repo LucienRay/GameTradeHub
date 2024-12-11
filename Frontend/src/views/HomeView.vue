@@ -3,9 +3,9 @@
       <ToolBar class="toolbar"/>
       <SearchBar class="search-bar"/>
       <div class="grid-container">
-          <div v-for="game in games" :key="game.name" class="button-container">
-              <img v-on:click="routeToGame(game.name)" :src="game.imageSrc" class="button-image" />
-              <div class="button-text">{{ game.name }}</div>
+          <div v-for="game in games" :key="game.Name" class="button-container">
+              <img v-on:click="routeToGame(game.Name)" :src="game.Image" class="button-image" />
+              <div class="button-text">{{ game.Name }}</div>
           </div>
       </div>
   </div>
@@ -19,18 +19,11 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
-const games = ref([
-{ name: 'Apex', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Cyberpunk 2077', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Elden Ring', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Counter-Strike 2', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'Dota 2', imageSrc: '/public/ApexLogo.jpg' },
-{ name: 'The Witcher 3', imageSrc: '/public/ApexLogo.jpg' }
-]);
+let games = ref([{ ID: 0,Name:'',Platform:'',Image:'' }]);
 
 onMounted(() => {
 // 驗證用戶登入狀態
-axios.post('/api/auth')
+  axios.post('/api/auth')
     .then(response => {
       axios.post('/api/get/userINFO').then(response => {
         console.log(response.data);
@@ -44,6 +37,13 @@ axios.post('/api/auth')
     .catch(() => {
       isAuthenticated.value = false; // 如果驗證失敗
     });
+
+  axios.post('/api/get/GameINFO').then(response => {
+    games.value = response.data;
+    console.log(games.value);
+  }).catch(error => {
+    console.log(error);
+  });
 });
 
 function logout() {
