@@ -135,9 +135,18 @@ APP.get('/', (request, response) => {
     response.sendFile(path.join(__dirname, 'www', 'index.html'))
 })
 
-APP.get('*', (request, response) => {
-    response.sendFile(path.join(__dirname, 'www', request.path))
-})
+APP.get('*', (req, res) => {
+    if (req.path.includes('..') || decodeURIComponent(req.path).includes('..')) {
+        res.status(403).send('Forbidden')
+    }
+    const filePath = path.join(__dirname, 'www', req.path);
+
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath)
+    } else {
+        res.sendFile(path.join(__dirname, 'www', 'index.html'))
+    }
+});
 
 APP.post('/api/login', async (request, response) => {
     console.log(request.body)
