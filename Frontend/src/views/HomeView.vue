@@ -23,12 +23,6 @@ import ChatWidget from '@/components/ChatWidget.vue';
 const router = useRouter();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
-<<<<<<< Updated upstream
-let games = ref([{ ID: 0, Name: '', Platform: '', Image: '' }]);
-
-onMounted(() => {
-  // 驗證用戶登入狀態
-=======
 const games = ref([
   { name: 'Apex', imageSrc: '/public/ApexLogo.jpg' },
   { name: 'Cyberpunk 2077', imageSrc: '/public/ApexLogo.jpg' },
@@ -40,7 +34,6 @@ const games = ref([
 
 onMounted(() => {
   // 驗證用戶登入狀態
->>>>>>> Stashed changes
   axios.post('/api/auth')
     .then(response => {
       axios.post('/api/get/userINFO').then(response => {
