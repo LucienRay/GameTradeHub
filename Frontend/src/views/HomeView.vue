@@ -27,12 +27,10 @@ onMounted(() => {
   axios.post('/api/auth')
     .then(response => {
       axios.post('/api/get/userINFO').then(response => {
-        console.log(response.data);
         Nickname.value = response.data.Nickname;
         isAuthenticated.value = true;
       }).catch(error => {
         isAuthenticated.value = false;
-        console.log(error);
       });
     })
     .catch(() => {
@@ -41,7 +39,6 @@ onMounted(() => {
 
   axios.post('/api/get/GameINFO').then(response => {
     games.value = response.data;
-    console.log(games.value);
   }).catch(error => {
     console.log(error);
   });
@@ -59,7 +56,7 @@ function logout() {
 
 function routeToGame(gameName: string) {
     // alert(`Routing to ${gameName} `);
-    router.push('/store');
+  router.push({ path: '/store', query: { game: gameName } });
 }
 </script>
 

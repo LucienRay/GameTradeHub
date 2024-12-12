@@ -17,7 +17,7 @@ import { defineProps } from 'vue';
 
 defineProps({
   list: {
-    type: Array as () => { Name: string; Seller: string; Price: number; Quantity: number }[],
+    type: Array as () => { ID: number; Name: string; Seller: string; Price: number; Quantity: number }[],
     required: true
   }
 });
