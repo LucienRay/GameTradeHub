@@ -31,7 +31,7 @@ onMounted(() => {
     .catch(() => {
       isAuthenticated.value = false; // 如果驗證失敗
     });
-  axios.post('/api/get/ItemINFO/Simple',{game:route.query.game}).then(response => {
+  axios.post('/api/get/SimpleItemINFOs',{game:route.query.game}).then(response => {
     dataList.value = response.data;
   }).catch(error => {
     console.log(error);
