@@ -16,7 +16,6 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from "vue-router";
-import ChatWidget from '@/components/ChatWidget.vue';
 
 const router = useRouter();
 const Nickname = ref('');
