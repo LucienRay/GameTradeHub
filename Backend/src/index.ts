@@ -250,14 +250,14 @@ APP.post('/api/get/GameINFO', async (req: AuthenticatedRequest, res) => {
     }
 });
 
-APP.post('/api/get/ItemINFO/Detail', async (req: AuthenticatedRequest, res) => {
+APP.post('/api/get/ItemINFO', async (req: AuthenticatedRequest, res) => {
     try {
         // 查詢遊戲資訊和圖片路徑
         const [queries] = await pool.execute<RowDataPacket[]>(
             'SELECT items.*\n' +
             'FROM items\n' +
-            'WHERE Game_ID = ?;',
-            [req.body.game]
+            'WHERE ID = ?;',
+            [req.body.ItemID]
         );
         res.json(queries);
     } catch (error) {
@@ -266,7 +266,7 @@ APP.post('/api/get/ItemINFO/Detail', async (req: AuthenticatedRequest, res) => {
     }
 });
 
-APP.post('/api/get/ItemINFO/Simple', async (req: AuthenticatedRequest, res) => {
+APP.post('/api/get/SimpleItemINFOs', async (req: AuthenticatedRequest, res) => {
     try {
         // 查詢遊戲資訊和圖片路徑
         const [queries] = await pool.execute<RowDataPacket[]>(
