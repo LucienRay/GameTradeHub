@@ -58,8 +58,8 @@ function logout() {
 }
 
 function routeToGame(gameName: string) {
-  alert(`Routing to ${gameName} `);
-  // router.push('/store')
+    // alert(`Routing to ${gameName} `);
+    router.push('/store');
 }
 </script>
 
