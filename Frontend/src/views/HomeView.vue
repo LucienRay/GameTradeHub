@@ -2,6 +2,7 @@
   <div class="container">
     <ToolBar class="toolbar" />
     <SearchBar class="search-bar" />
+    <ChatWidget class="chatWidget" />
     <div class="grid-container">
       <div v-for="game in games" :key="game.Name" class="button-container">
         <img v-on:click="routeToGame(game.Name)" :src="game.Image" class="button-image" />
@@ -15,6 +16,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from "vue-router";
+import ChatWidget from '@/components/ChatWidget.vue';
 
 const router = useRouter();
 const Nickname = ref('');
