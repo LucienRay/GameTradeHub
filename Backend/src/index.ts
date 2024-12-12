@@ -282,6 +282,40 @@ APP.post('/api/get/ItemINFO/Simple', async (req: AuthenticatedRequest, res) => {
     }
 });
 
+APP.post('/api/get/Messages', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        // 查詢與該用戶相關的消息記錄
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT * ' +
+            'FROM messages ' +
+            'WHERE Sender_ID = ? OR Receiver_ID = ? ' +
+            'ORDER BY Sent_Time ASC;',
+            [user, user]
+        );
+
+        const result: {[username: string]: {Time: Date, Context: string, mode: boolean}[]} = {}
+        queries.forEach((query) => {
+            const key = query.Sender_ID === user ? query.Receiver_ID : query.Sender_ID;
+            const mode = query.Sender_ID === user;
+            if (!result[key]) {
+                result[key] = [];
+            }
+            result[key].push({
+                    Time: query.Sent_Time,
+                    Context: query.Context,
+                    mode: mode
+            });
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+
 // APP.listen(80)
 
 const options = {
