@@ -238,10 +238,10 @@ APP.post('/api/get/GameINFO', async (req: AuthenticatedRequest, res) => {
     try {
         // 查詢遊戲資訊和圖片路徑
         const [queries] = await pool.execute<RowDataPacket[]>(
-            `SELECT g.ID, g.Name, g.Platform, i.path AS Image
-             FROM games g
-             LEFT JOIN images i
-             ON g.Image_ID = i.ID;`
+            'SELECT g.ID, g.Name, g.Platform, i.path AS Image\n' +
+            'FROM games g\n' +
+            'LEFT JOIN images i\n' +
+            'ON g.Image_ID = i.ID;'
         );
         res.json(queries);
     } catch (error) {
@@ -250,6 +250,37 @@ APP.post('/api/get/GameINFO', async (req: AuthenticatedRequest, res) => {
     }
 });
 
+APP.post('/api/get/ItemINFO/Detail', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT items.*\n' +
+            'FROM items\n' +
+            'WHERE Game_ID = ?;',
+            [req.body.game]
+        );
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/ItemINFO/Simple', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT i.ID, i.title Name, i.Seller_ID Seller, i.Price, i.Quantity \n' +
+            'FROM items i\n' +
+            'WHERE Game_ID = ?;',
+            [req.body.game]
+        );
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 // APP.listen(80)
 
