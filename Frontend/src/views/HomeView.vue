@@ -2,12 +2,10 @@
   <div class="container">
     <ToolBar class="toolbar" />
     <SearchBar class="search-bar" />
-    <ChatWidget class="chatWidget" />
     <div class="grid-container">
-      <div v-for="game in games" :key="game.name" class="button-container">
-        <img v-on:click="routeToGame(game.name)" :src="game.imageSrc" class="button-image" />
-        <div class="button-text">{{ game.name }}</div>
-        >>>>>>> Stashed changes
+      <div v-for="game in games" :key="game.Name" class="button-container">
+        <img v-on:click="routeToGame(game.Name)" :src="game.Image" class="button-image" />
+        <div class="button-text">{{ game.Name }}</div>
       </div>
     </div>
   </div>
@@ -17,20 +15,11 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from "vue-router";
-import ChatWidget from '@/components/ChatWidget.vue';
-
 
 const router = useRouter();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
-const games = ref([
-  { name: 'Apex', imageSrc: '/public/ApexLogo.jpg' },
-  { name: 'Cyberpunk 2077', imageSrc: '/public/ApexLogo.jpg' },
-  { name: 'Elden Ring', imageSrc: '/public/ApexLogo.jpg' },
-  { name: 'Counter-Strike 2', imageSrc: '/public/ApexLogo.jpg' },
-  { name: 'Dota 2', imageSrc: '/public/ApexLogo.jpg' },
-  { name: 'The Witcher 3', imageSrc: '/public/ApexLogo.jpg' }
-]);
+let games = ref([{ ID: 0, Name: '', Platform: '', Image: '' }]);
 
 onMounted(() => {
   // 驗證用戶登入狀態
