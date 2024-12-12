@@ -1,13 +1,15 @@
 <template>
   <div class="container">
-      <ToolBar class="toolbar"/>
-      <SearchBar class="search-bar"/>
-      <div class="grid-container">
-          <div v-for="game in games" :key="game.Name" class="button-container">
-              <img v-on:click="routeToGame(game.Name)" :src="game.Image" class="button-image" />
-              <div class="button-text">{{ game.Name }}</div>
-          </div>
+    <ToolBar class="toolbar" />
+    <SearchBar class="search-bar" />
+    <ChatWidget class="chatWidget" />
+    <div class="grid-container">
+      <div v-for="game in games" :key="game.name" class="button-container">
+        <img v-on:click="routeToGame(game.name)" :src="game.imageSrc" class="button-image" />
+        <div class="button-text">{{ game.name }}</div>
+        >>>>>>> Stashed changes
       </div>
+    </div>
   </div>
 </template>
 
@@ -15,14 +17,30 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from "vue-router";
+import ChatWidget from '@/components/ChatWidget.vue';
+
 
 const router = useRouter();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
-let games = ref([{ ID: 0,Name:'',Platform:'',Image:'' }]);
+<<<<<<< Updated upstream
+let games = ref([{ ID: 0, Name: '', Platform: '', Image: '' }]);
 
 onMounted(() => {
-// 驗證用戶登入狀態
+  // 驗證用戶登入狀態
+=======
+const games = ref([
+  { name: 'Apex', imageSrc: '/public/ApexLogo.jpg' },
+  { name: 'Cyberpunk 2077', imageSrc: '/public/ApexLogo.jpg' },
+  { name: 'Elden Ring', imageSrc: '/public/ApexLogo.jpg' },
+  { name: 'Counter-Strike 2', imageSrc: '/public/ApexLogo.jpg' },
+  { name: 'Dota 2', imageSrc: '/public/ApexLogo.jpg' },
+  { name: 'The Witcher 3', imageSrc: '/public/ApexLogo.jpg' }
+]);
+
+onMounted(() => {
+  // 驗證用戶登入狀態
+>>>>>>> Stashed changes
   axios.post('/api/auth')
     .then(response => {
       axios.post('/api/get/userINFO').then(response => {
@@ -47,7 +65,7 @@ onMounted(() => {
 });
 
 function logout() {
-axios.post('/api/logout')
+  axios.post('/api/logout')
     .then(() => {
       isAuthenticated.value = false;
     })
@@ -57,8 +75,8 @@ axios.post('/api/logout')
 }
 
 function routeToGame(gameName: string) {
-    alert(`Routing to ${gameName} `);
-    // router.push('/store')
+  alert(`Routing to ${gameName} `);
+  // router.push('/store')
 }
 </script>
 
@@ -74,42 +92,42 @@ function routeToGame(gameName: string) {
 }
 
 .grid-container {
-width: 70%;
-margin-left: 15%;
-display: flex;
-flex-wrap: wrap;
+  width: 70%;
+  margin-left: 15%;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .button-container {
-margin-top: 35px;
-flex: 0 0 25%;
-width: 230px;
-height: 120px;
-position: relative;
-transition: 0.3s;
+  margin-top: 35px;
+  flex: 0 0 25%;
+  width: 230px;
+  height: 120px;
+  position: relative;
+  transition: 0.3s;
 }
 
 .button-container:hover {
-transform: translate(0, -10px);
+  transform: translate(0, -10px);
 }
 
 .button-image {
-object-fit: cover;
-width: 220px;
-height: 120px;
-display: block;
-filter: blur(4px);
-border-radius: 25px;
+  object-fit: cover;
+  width: 220px;
+  height: 120px;
+  display: block;
+  filter: blur(4px);
+  border-radius: 25px;
 }
 
 .button-text {
-position: absolute;
-bottom: 65%;
-left: 8%;
-font-size: 24px; 
-color: white;
-text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
-text-align: left;
-font-weight: bold;
+  position: absolute;
+  bottom: 65%;
+  left: 8%;
+  font-size: 24px;
+  color: white;
+  text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
+  text-align: left;
+  font-weight: bold;
 }
 </style>
