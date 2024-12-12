@@ -2,12 +2,7 @@
   <div class="container">
       <ToolBar class="toolbar"/>
       <SearchBar class="search-bar"/>
-      <div class="grid-container">
-          <div v-for="game in games" :key="game.Name" class="button-container">
-              <img v-on:click="routeToGame(game.Name)" :src="game.Image" class="button-image" />
-              <div class="button-text">{{ game.Name }}</div>
-          </div>
-      </div>
+      <DataList :list="dataList"></DataList>
   </div>
 </template>
 
@@ -19,7 +14,9 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
-let games = ref([{ ID: 0,Name:'',Platform:'',Image:'' }]);
+let dataList = ref([{ Name: 'FirstItem', Seller: 'Andy', Price: 0, Quantity: 0},
+                    { Name: 'SecondItem', Seller: 'Chen', Price: 0, Quantity: 0}
+                    ]);
 
 onMounted(() => {
 // 驗證用戶登入狀態
@@ -38,9 +35,9 @@ onMounted(() => {
       isAuthenticated.value = false; // 如果驗證失敗
     });
 
-  axios.post('/api/get/GameINFO').then(response => {
-    games.value = response.data;
-    console.log(games.value);
+  axios.post('/api/get/Items').then(response => {
+    dataList.value = response.data;
+    console.log(dataList.value);
   }).catch(error => {
     console.log(error);
   });
@@ -56,9 +53,9 @@ axios.post('/api/logout')
     });
 }
 
-function routeToGame(gameName: string) {
-    // alert(`Routing to ${gameName} `);
-    router.push('/store');
+function routeToItem(itemID: string) {
+    alert(`Routing to ${itemID} `);
+    // router.push('/store')
 }
 </script>
 
@@ -73,43 +70,4 @@ function routeToGame(gameName: string) {
   align-items: center;
 }
 
-.grid-container {
-width: 70%;
-margin-left: 15%;
-display: flex;
-flex-wrap: wrap;
-}
-
-.button-container {
-margin-top: 35px;
-flex: 0 0 25%;
-width: 230px;
-height: 120px;
-position: relative;
-transition: 0.3s;
-}
-
-.button-container:hover {
-transform: translate(0, -10px);
-}
-
-.button-image {
-object-fit: cover;
-width: 220px;
-height: 120px;
-display: block;
-filter: blur(4px);
-border-radius: 25px;
-}
-
-.button-text {
-position: absolute;
-bottom: 65%;
-left: 8%;
-font-size: 24px; 
-color: white;
-text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
-text-align: left;
-font-weight: bold;
-}
 </style>
