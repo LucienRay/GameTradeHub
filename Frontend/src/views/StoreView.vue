@@ -9,35 +9,30 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
+const route = useRoute();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
-let dataList = ref([{ Name: 'FirstItem', Seller: 'Andy', Price: 0, Quantity: 0},
-                    { Name: 'SecondItem', Seller: 'Chen', Price: 0, Quantity: 0}
-                    ]);
+let dataList = ref([{ Name: '', Seller: '', Price: 0, Quantity: 0}]);
 
 onMounted(() => {
 // 驗證用戶登入狀態
   axios.post('/api/auth')
     .then(response => {
       axios.post('/api/get/userINFO').then(response => {
-        console.log(response.data);
         Nickname.value = response.data.Nickname;
         isAuthenticated.value = true;
       }).catch(error => {
         isAuthenticated.value = false;
-        console.log(error);
       });
     })
     .catch(() => {
       isAuthenticated.value = false; // 如果驗證失敗
     });
-
-  axios.post('/api/get/Items').then(response => {
+  axios.post('/api/get/SimpleItemINFOs',{game:route.query.game}).then(response => {
     dataList.value = response.data;
-    console.log(dataList.value);
   }).catch(error => {
     console.log(error);
   });
