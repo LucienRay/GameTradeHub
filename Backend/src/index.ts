@@ -238,14 +238,79 @@ APP.post('/api/get/GameINFO', async (req: AuthenticatedRequest, res) => {
     try {
         // 查詢遊戲資訊和圖片路徑
         const [queries] = await pool.execute<RowDataPacket[]>(
-            `SELECT g.ID, g.Name, g.Platform, i.path AS Image
-             FROM games g
-             LEFT JOIN images i
-             ON g.Image_ID = i.ID;`
+            'SELECT g.ID, g.Name, g.Platform, i.path AS Image\n' +
+            'FROM games g\n' +
+            'LEFT JOIN images i\n' +
+            'ON g.Image_ID = i.ID;'
         );
         res.json(queries);
     } catch (error) {
         console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/ItemINFO', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT items.*\n' +
+            'FROM items\n' +
+            'WHERE ID = ?;',
+            [req.body.ItemID]
+        );
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/SimpleItemINFOs', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT i.ID, i.title Name, i.Seller_ID Seller, i.Price, i.Quantity \n' +
+            'FROM items i\n' +
+            'WHERE Game_ID = ?;',
+            [req.body.game]
+        );
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/Messages', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        // 查詢與該用戶相關的消息記錄
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT * ' +
+            'FROM messages ' +
+            'WHERE Sender_ID = ? OR Receiver_ID = ? ' +
+            'ORDER BY Sent_Time ASC;',
+            [user, user]
+        );
+
+        const result: {[username: string]: {Time: Date, Context: string, mode: boolean}[]} = {}
+        queries.forEach((query) => {
+            const key = query.Sender_ID === user ? query.Receiver_ID : query.Sender_ID;
+            const mode = query.Sender_ID === user;
+            if (!result[key]) {
+                result[key] = [];
+            }
+            result[key].push({
+                    Time: query.Sent_Time,
+                    Context: query.Context,
+                    mode: mode
+            });
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
         res.status(500).send('Internal Server Error');
     }
 });
