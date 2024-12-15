@@ -1,7 +1,7 @@
 <template>
     <div class="toolbar">
       <button
-        v-for="tool in tools"
+          v-for="tool in tools.filter(tool => tool.condition())"
         :key="tool.label"
         :title="tool.tooltip"
         @click="tool.action"
@@ -9,13 +9,17 @@
       >
         <i :class="tool.icon"></i> {{ tool.label }}
       </button>
+      <p v-if="isAuthenticated">Hi {{ Nickname }}!</p>
     </div>
 </template>
   
 <script setup lang="ts">
-import { ref } from "vue";
+import {onMounted, ref} from "vue";
 import { useRouter } from "vue-router";
+import axios from "axios";
 
+const Nickname = ref('');
+const isAuthenticated = ref(false);
 const router = useRouter();
 // 定義工具按鈕數據
 const tools = ref([
@@ -26,6 +30,23 @@ const tools = ref([
     action: () => {
         router.push('/login')
     },
+    condition: () => !isAuthenticated.value, // 只有未登入時顯示
+},
+{
+  label: "登出",
+  tooltip: "登出",
+  icon: "fa fa-plus",
+  action: () => {
+    axios.post('/api/logout')
+      .then(() => {
+        isAuthenticated.value = false;
+        router.push('/');
+      })
+      .catch(() => {
+        console.log('Logout failed');
+      });
+  },
+  condition: () => isAuthenticated.value, // 只有已登入時顯示
 },
 // {
 //   label: "|",
@@ -40,6 +61,24 @@ const tools = ref([
 //   action: () => alert("這是幫助內容"),
 // },
 ]);
+
+onMounted(() => {
+  // 驗證用戶登入狀態
+  axios.post('/api/auth')
+      .then(response => {
+        axios.post('/api/get/userINFO').then(response => {
+          Nickname.value = response.data.Nickname;
+          isAuthenticated.value = true;
+        }).catch(error => {
+          isAuthenticated.value = false;
+        });
+      })
+      .catch(() => {
+        isAuthenticated.value = false; // 如果驗證失敗
+      });
+});
+
+
 </script>
   
 <style scoped>
