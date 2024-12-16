@@ -230,7 +230,9 @@ APP.post('/api/logout', (req: Request, res: Response) => {
 
 APP.post('/api/get/userINFO', authenticate, async (req:AuthenticatedRequest, res) => {
     const username = (req.user as JwtPayload).username;
-    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
+    const [queries] = await pool.execute<RowDataPacket[]>(
+        'SELECT u.ID,u.SSN,u.Nickname,u.Phone,u.Email ' +
+        ' FROM users u WHERE ID = ?', [username]);
     res.json(queries[0]);
 })
 
