@@ -5,6 +5,7 @@ import RegisterView from "@/views/RegisterView.vue";
 import StoreView from '@/views/StoreView.vue';
 import UserCenterView from "@/views/UserCenterView.vue";
 import ListItemView from "@/views/ListItemView.vue";
+import ItemView from '@/views/ItemView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -43,6 +44,12 @@ const router = createRouter({
       name: 'listItem',
       component: ListItemView,
     },
+    {
+      path: '/item/:ID',
+      name: 'item',
+      component: ItemView,
+      props: true
+    }
   ],
 })
 
