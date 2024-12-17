@@ -4,6 +4,7 @@ import LoginView from "@/views/LoginView.vue";
 import RegisterView from "@/views/RegisterView.vue";
 import StoreView from '@/views/StoreView.vue';
 import UserCenterView from "@/views/UserCenterView.vue";
+import ListItemView from "@/views/ListItemView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -36,6 +37,11 @@ const router = createRouter({
       path: '/userCenter',
       name: 'userCenter',
       component: UserCenterView,
+    },
+    {
+      path: '/listItem',
+      name: 'listItem',
+      component: ListItemView,
     },
   ],
 })
