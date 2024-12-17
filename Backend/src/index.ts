@@ -1,13 +1,13 @@
 import express, {Request, Response, NextFunction, request} from 'express'
 import path from 'path'
-import mysql, {RowDataPacket} from 'mysql2/promise';
+import mysql, {ResultSetHeader, RowDataPacket} from 'mysql2/promise';
 import https from 'https';
 import fs from 'fs';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import validator from 'validator';
-import mime from 'mime';
+import multer from 'multer';
 
 const APP = express()
 
@@ -24,6 +24,21 @@ const pool = mysql.createPool({
 
 const SECRET_KEY = '62d6be3277e5bdd1b73800f195bc4a67500088b638109f7323123a420f1a3433';
 const allowedOrigins = ['https://localhost', 'https://www.xn--rhy.tw'];
+
+// 設定圖片上傳存儲位置
+const storage = multer.diskStorage({
+    // 設定檔案上傳目錄
+    destination: function (req, file, cb) {
+        cb(null, 'images/');
+    },
+    // 自定義檔案名稱，保留副檔名
+    filename: function (req, file, cb) {
+        const ext = path.extname(file.originalname); // 取得副檔名
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + ext); // 新檔名
+    },
+});
+const upload = multer({dest: 'images/', storage: storage });
 
 
 interface AuthenticatedRequest extends Request {
@@ -325,6 +340,32 @@ APP.post('/api/get/Messages', authenticate, async (req: AuthenticatedRequest, re
     }
 });
 
+APP.post('/api/listItem', upload.single('image'), authenticate, async (req:AuthenticatedRequest, res) => {
+    const { name, price,quantity, description, game_id } = req.body;
+    const image = req.file;
+    const seller_id = (req.user as JwtPayload).username;
+    try {
+        const [imageResult] = await pool.execute<ResultSetHeader>(
+            'INSERT INTO images (path) VALUES (?)',
+            ['/' + image?.path]
+        );
+
+        const imageId = imageResult.insertId; // 正確取得 insertId
+
+        // 2. 插入商品到 items 表
+        await pool.execute(
+            `INSERT INTO items 
+            (Title, Price, Quantity, Description, Seller_ID, Game_ID, Image_ID) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [name, price, quantity, description, seller_id, game_id, imageId]
+        );
+
+        res.json({ success: true, message: '商品和圖片已成功接收！' });
+    } catch (error) {
+        console.error('資料插入失敗：', error);
+        res.status(500).json({ success: false, message: '商品上架失敗，請稍後再試！' });
+    }
+});
 
 // APP.listen(80)
 
