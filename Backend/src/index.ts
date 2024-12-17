@@ -256,12 +256,20 @@ APP.post('/api/get/ItemINFO', async (req: AuthenticatedRequest, res) => {
     try {
         // 查詢遊戲資訊和圖片路徑
         const [queries] = await pool.execute<RowDataPacket[]>(
-            'SELECT items.*\n' +
-            'FROM items\n' +
-            'WHERE ID = ?;',
-            [req.body.ItemID]
+            'SELECT \n' +
+            'items.Title, \n' +
+            'items.Price, \n' +
+            'items.Quantity, \n' +
+            'items.Description, \n' +
+            'items.Seller_ID, \n' +
+            'items.Game_ID, \n' +
+            'images.path \n' +
+            'FROM items \n' +
+            'LEFT JOIN images ON items.Image_ID = images.ID \n' +
+            'WHERE items.ID = ?;',
+            [req.body.ID]
         );
-        res.json(queries);
+        res.json(queries[0]);
     } catch (error) {
         console.error('Error fetching game info:', error);
         res.status(500).send('Internal Server Error');
