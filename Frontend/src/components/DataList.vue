@@ -1,8 +1,8 @@
 <template>
     <div class="list-container">
       <ul>
-        <li v-for="item in list">
-            <div class="item-container">
+        <li v-for="item in list" >
+            <div class="item-container" @click="navigateToItem(item.ID)">
                 <div class="item-name">{{ item.Name }}</div>
                 <div class="item-price">NT${{ item.Price }}</div>
                 <div class="item-seller">{{ item.Seller }}</div>
@@ -14,13 +14,17 @@
 
 <script setup lang="ts">
 import { defineProps } from 'vue';
-
+import { useRouter } from 'vue-router';
+const router = useRouter();
 defineProps({
   list: {
     type: Array as () => { ID: number; Name: string; Seller: string; Price: number; Quantity: number }[],
     required: true
   }
 });
+const navigateToItem = (ID: number) => {
+      router.push({ name: 'item', params: { ID } });
+};
 </script>
 
 <style scoped>
@@ -48,6 +52,7 @@ border-bottom: none;
 .item-container {
     display: flex;
     flex-direction: column;
+    cursor: pointer;
 }
 
 .item-name{

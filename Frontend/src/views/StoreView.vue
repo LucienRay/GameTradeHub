@@ -15,7 +15,9 @@ const router = useRouter();
 const route = useRoute();
 const Nickname = ref('');
 const isAuthenticated = ref(false);
-let dataList = ref([{ Name: '', Seller: '', Price: 0, Quantity: 0}]);
+let dataList = ref([{ ID: 1, Name: 'Name', Seller: 'Seller', Price: 100, Quantity: 0},
+                    { ID: 2, Name: 'Name', Seller: 'Seller', Price: 200, Quantity: 0}
+]);
 
 onMounted(() => {
 // 驗證用戶登入狀態
