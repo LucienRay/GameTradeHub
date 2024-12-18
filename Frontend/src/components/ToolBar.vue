@@ -7,7 +7,7 @@
         @click="tool.action"
         class="toolbar-button"
       >
-        <i :class="tool.icon"></i> {{ tool.label }}
+        <i :class="tool.icon"></i> {{ tool.label }}ƒƒ
       </button>
       <p v-if="isAuthenticated">Hi {{ Nickname }}!</p>
     </div>
@@ -28,7 +28,7 @@ const tools = ref([
     tooltip: "登入",
     icon: "fa fa-plus",
     action: () => {
-        router.push('/login')
+        router.push('/login');
     },
     condition: () => !isAuthenticated.value, // 只有未登入時顯示
 },
@@ -45,6 +45,15 @@ const tools = ref([
       .catch(() => {
         console.log('Logout failed');
       });
+  },
+  condition: () => isAuthenticated.value, // 只有已登入時顯示
+},
+{
+  label: "購物車",
+  tooltip: "購物車",
+  icon: "fa fa-plus",
+  action: () => {
+    router.push('/cart');
   },
   condition: () => isAuthenticated.value, // 只有已登入時顯示
 },
