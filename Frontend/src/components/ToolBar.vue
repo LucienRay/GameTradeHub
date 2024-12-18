@@ -7,7 +7,7 @@
         @click="tool.action"
         class="toolbar-button"
       >
-        <i :class="tool.icon"></i> {{ tool.label }}ƒƒ
+        <i :class="tool.icon"></i> {{ tool.label }}
       </button>
       <p v-if="isAuthenticated">Hi {{ Nickname }}!</p>
     </div>
