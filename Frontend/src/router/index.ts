@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from "@/views/LoginView.vue";
 import RegisterView from "@/views/RegisterView.vue";
 import StoreView from '@/views/StoreView.vue';
+import ShoppingCart from '@/views/ShoppingCart.vue';
 import UserCenterView from "@/views/UserCenterView.vue";
 import ListItemView from "@/views/ListItemView.vue";
 import ItemView from '@/views/ItemView.vue';
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/store',
       name: 'store',
       component: StoreView,
+    },
+    {
+      path: '/cart',
+      name: 'cart',
+      component: ShoppingCart,
     },
     {
       path: '/userCenter',
