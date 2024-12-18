@@ -84,6 +84,10 @@ h1 {
   text-align: center;
 }
 
+h1, h2, h3, p, a, span {
+  color: #ffffff;  /* 替換為你想要的顏色 */
+}
+
 .empty-cart {
   text-align: center;
 }
@@ -127,6 +131,7 @@ h1 {
 
 .remove-button {
   color: #b2b8bd;
+  background-color: transparent;
   border: none;
   padding: 5px 10px;
   border-radius: 5px;
