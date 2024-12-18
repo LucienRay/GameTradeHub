@@ -30,7 +30,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+import {ref, computed, onMounted} from 'vue';
+import axios from "axios";
 
   interface CartItem {
     id: number;
@@ -41,11 +42,7 @@
     seller: string;
   }
 
-  const cartItems = ref<CartItem[]>([
-    { id: 1, name: '商品 A', price: 100, quantity: 1, image: 'link_to_image_a', seller: 'seller1' },
-    { id: 2, name: '商品 B', price: 200, quantity: 2, image: 'link_to_image_b', seller: 'seller2' },
-    { id: 3, name: '商品 C', price: 300, quantity: 3, image: 'link_to_image_c', seller: 'seller3' },
-  ]);
+  const cartItems = ref<CartItem[]>([]);
 
   const totalPrice = computed(() => {
     return cartItems.value.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -53,21 +50,54 @@
 
   function increaseQuantity(item: CartItem) {
     item.quantity++;
+    axios.post('/api/update/shoppingCart', {id: item.id, quantity: item.quantity})
+      .then(response => {
+        console.log('Item quantity updated:', response.data);
+      })
+      .catch(error => {
+        console.error('Error updating item quantity:', error);
+      });
   }
 
   function decreaseQuantity(item: CartItem) {
     if (item.quantity > 1) {
       item.quantity--;
+      axios.post('/api/update/shoppingCart', {id: item.id, quantity: item.quantity})
+          .then(response => {
+            console.log('Item quantity updated:', response.data);
+          })
+          .catch(error => {
+            console.error('Error updating item quantity:', error);
+          });
     }
   }
 
   function removeItem(item: CartItem) {
     cartItems.value = cartItems.value.filter(i => i.id !== item.id);
+    axios.post('/api/delete/shoppingCart', {id: item.id})
+      .then(response => {
+        console.log('Item removed:', response.data);
+      })
+      .catch(error => {
+        console.error('Error removing item:', error);
+      });
   }
 
   function checkout() {
     alert('結帳功能尚未實現。');
   }
+
+  onMounted(() => {
+    axios.post('/api/get/shoppingCart')
+      .then(response => {
+        cartItems.value = response.data;
+        console.log( response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching cart items:', error);
+      });
+  });
+
 </script>
 
 <style scoped>
