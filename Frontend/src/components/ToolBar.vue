@@ -52,6 +52,27 @@ const tools = ref([
     },
     condition: () => isAuthenticated.value, // 只有已登入時顯示
   },
+  {
+    label: "購物車",
+    tooltip: "購物車",
+    icon: "fa fa-plus",
+    action: () => {
+      router.push('/cart');
+    },
+    condition: () => isAuthenticated.value, // 只有已登入時顯示
+  },
+// {
+//   label: "|",
+//   tooltip: "保存進度",
+//   icon: "fa fa-save",
+//   action: () => alert("保存成功"),
+// },
+// {
+//   label: "幫助",
+//   tooltip: "查看幫助",
+//   icon: "fa fa-question-circle",
+//   action: () => alert("這是幫助內容"),
+// },
 ]);
 
 onMounted(() => {
