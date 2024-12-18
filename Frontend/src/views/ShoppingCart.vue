@@ -85,7 +85,7 @@ h1 {
 }
 
 h1, h2, h3, p, a, span {
-  color: #ffffff;  /* 替換為你想要的顏色 */
+  color: #ffffff;
 }
 
 .empty-cart {
