@@ -367,6 +367,88 @@ APP.post('/api/listItem', upload.single('image'), authenticate, async (req:Authe
     }
 });
 
+APP.post('/api/get/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        // 查詢 wish、items 和 images 表格的購物車相關資料
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT 
+                i.ID AS id, 
+                i.Title AS name, 
+                i.Price AS price, 
+                w.Quantity AS quantity, 
+                img.path AS image, 
+                i.Seller_ID AS seller 
+             FROM wish AS w
+             JOIN items AS i ON w.Item_ID = i.ID
+             LEFT JOIN images AS img ON i.Image_ID = img.ID
+             WHERE w.User_ID = ?;`,
+            [user]
+        );
+
+        res.json(queries);
+        console.log(queries);
+    } catch (error) {
+        console.error('Error fetching shopping cart details:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/update/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { id, quantity } = req.body; // 從請求中取得 item ID 和更新後的數量
+    const user = (req.user as JwtPayload).username; // 從認證 token 中取得 User_ID
+
+    try {
+        // 檢查數據的合法性
+        if (!id || quantity == null || quantity < 0) {
+            res.status(400).json({ message: 'Invalid item ID or quantity' });
+        }
+
+        // 更新 wish 表格中的數量
+        const [result] = await pool.execute<ResultSetHeader>(
+            `UPDATE wish 
+             SET Quantity = ? 
+             WHERE User_ID = ? AND Item_ID = ?;`,
+            [quantity, user, id]
+        );
+
+        // 判斷是否有成功更新
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Item quantity updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Item not found in the shopping cart' });
+        }
+    } catch (error) {
+        console.error('Error updating item quantity:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+APP.post('/api/delete/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { id } = req.body; // 從請求中獲取要刪除的 Item_ID
+    const user = (req.user as JwtPayload).username; // 從認證 token 中獲取 User_ID
+
+    try {
+        // 執行刪除語句
+        const [result] = await pool.execute<ResultSetHeader>(
+            `DELETE FROM wish 
+             WHERE User_ID = ? AND Item_ID = ?;`,
+            [user, id]
+        );
+
+        // 判斷是否有成功刪除
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Item deleted successfully from the shopping cart' });
+        } else {
+            res.status(404).json({ message: 'Item not found in the shopping cart' });
+        }
+    } catch (error) {
+        console.error('Error deleting item from shopping cart:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+
 // APP.listen(80)
 
 const options = {
