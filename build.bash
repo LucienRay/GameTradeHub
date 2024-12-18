@@ -7,4 +7,4 @@ npm run build
 # Return to the root directory and navigate to Backend, then build and start
 cd ../Backend || exit
 npm run build
-sudo npm run start
+npm run start
