@@ -198,7 +198,12 @@ APP.post('/api/register', async (request, response) => {
         email: true
     };
 
-    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
+    const [queries] = await pool.execute<RowDataPacket[]>(
+        'SELECT * FROM users ' +
+        'WHERE ID = ? OR ' +
+        'Email = ? OR ' +
+        'Phone = ? OR ' +
+        'SSN = ?', [username, email, phone, ssn]);
 
     validationResults.username = username.length>=8 && username.length<=20 && queries.length === 0;
     validationResults.password = validatePassword(password);
