@@ -3,3 +3,4 @@ node_modules
 build
 cloudflareDDNS.py
 images.DS_Store
+images
