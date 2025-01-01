@@ -1,13 +1,13 @@
 import express, {Request, Response, NextFunction, request} from 'express'
 import path from 'path'
-import mysql, {RowDataPacket} from 'mysql2/promise';
+import mysql, {ResultSetHeader, RowDataPacket} from 'mysql2/promise';
 import https from 'https';
 import fs from 'fs';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import validator from 'validator';
-import mime from 'mime';
+import multer from 'multer';
 
 const APP = express()
 
@@ -24,6 +24,21 @@ const pool = mysql.createPool({
 
 const SECRET_KEY = '62d6be3277e5bdd1b73800f195bc4a67500088b638109f7323123a420f1a3433';
 const allowedOrigins = ['https://localhost', 'https://www.xn--rhy.tw'];
+
+// 設定圖片上傳存儲位置
+const storage = multer.diskStorage({
+    // 設定檔案上傳目錄
+    destination: function (req, file, cb) {
+        cb(null, 'images/');
+    },
+    // 自定義檔案名稱，保留副檔名
+    filename: function (req, file, cb) {
+        const ext = path.extname(file.originalname); // 取得副檔名
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + ext); // 新檔名
+    },
+});
+const upload = multer({dest: 'images/', storage: storage });
 
 
 interface AuthenticatedRequest extends Request {
@@ -183,7 +198,12 @@ APP.post('/api/register', async (request, response) => {
         email: true
     };
 
-    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
+    const [queries] = await pool.execute<RowDataPacket[]>(
+        'SELECT * FROM users ' +
+        'WHERE ID = ? OR ' +
+        'Email = ? OR ' +
+        'Phone = ? OR ' +
+        'SSN = ?', [username, email, phone, ssn]);
 
     validationResults.username = username.length>=8 && username.length<=20 && queries.length === 0;
     validationResults.password = validatePassword(password);
@@ -230,7 +250,9 @@ APP.post('/api/logout', (req: Request, res: Response) => {
 
 APP.post('/api/get/userINFO', authenticate, async (req:AuthenticatedRequest, res) => {
     const username = (req.user as JwtPayload).username;
-    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
+    const [queries] = await pool.execute<RowDataPacket[]>(
+        'SELECT u.ID,u.SSN,u.Nickname,u.Phone,u.Email ' +
+        ' FROM users u WHERE ID = ?', [username]);
     res.json(queries[0]);
 })
 
@@ -254,12 +276,20 @@ APP.post('/api/get/ItemINFO', async (req: AuthenticatedRequest, res) => {
     try {
         // 查詢遊戲資訊和圖片路徑
         const [queries] = await pool.execute<RowDataPacket[]>(
-            'SELECT items.*\n' +
-            'FROM items\n' +
-            'WHERE ID = ?;',
-            [req.body.ItemID]
+            'SELECT \n' +
+            'items.Title, \n' +
+            'items.Price, \n' +
+            'items.Quantity, \n' +
+            'items.Description, \n' +
+            'items.Seller_ID, \n' +
+            'items.Game_ID, \n' +
+            'images.path \n' +
+            'FROM items \n' +
+            'LEFT JOIN images ON items.Image_ID = images.ID \n' +
+            'WHERE items.ID = ?;',
+            [req.body.ID]
         );
-        res.json(queries);
+        res.json(queries[0]);
     } catch (error) {
         console.error('Error fetching game info:', error);
         res.status(500).send('Internal Server Error');
@@ -312,6 +342,114 @@ APP.post('/api/get/Messages', authenticate, async (req: AuthenticatedRequest, re
     } catch (error) {
         console.error('Error fetching messages:', error);
         res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/listItem', upload.single('image'), authenticate, async (req:AuthenticatedRequest, res) => {
+    const { name, price,quantity, description, game_id } = req.body;
+    const image = req.file;
+    const seller_id = (req.user as JwtPayload).username;
+    try {
+        const [imageResult] = await pool.execute<ResultSetHeader>(
+            'INSERT INTO images (path) VALUES (?)',
+            ['/' + image?.path]
+        );
+
+        const imageId = imageResult.insertId; // 正確取得 insertId
+
+        // 2. 插入商品到 items 表
+        await pool.execute(
+            `INSERT INTO items 
+            (Title, Price, Quantity, Description, Seller_ID, Game_ID, Image_ID) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [name, price, quantity, description, seller_id, game_id, imageId]
+        );
+
+        res.json({ success: true, message: '商品和圖片已成功接收！' });
+    } catch (error) {
+        console.error('資料插入失敗：', error);
+        res.status(500).json({ success: false, message: '商品上架失敗，請稍後再試！' });
+    }
+});
+
+APP.post('/api/get/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        // 查詢 wish、items 和 images 表格的購物車相關資料
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT 
+                i.ID AS id, 
+                i.Title AS name, 
+                i.Price AS price, 
+                w.Quantity AS quantity, 
+                img.path AS image, 
+                i.Seller_ID AS seller 
+             FROM wish AS w
+             JOIN items AS i ON w.Item_ID = i.ID
+             LEFT JOIN images AS img ON i.Image_ID = img.ID
+             WHERE w.User_ID = ?;`,
+            [user]
+        );
+
+        res.json(queries);
+        console.log(queries);
+    } catch (error) {
+        console.error('Error fetching shopping cart details:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/update/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { id, quantity } = req.body; // 從請求中取得 item ID 和更新後的數量
+    const user = (req.user as JwtPayload).username; // 從認證 token 中取得 User_ID
+
+    try {
+        // 檢查數據的合法性
+        if (!id || quantity == null || quantity < 0) {
+            res.status(400).json({ message: 'Invalid item ID or quantity' });
+        }
+
+        // 更新 wish 表格中的數量
+        const [result] = await pool.execute<ResultSetHeader>(
+            `UPDATE wish 
+             SET Quantity = ? 
+             WHERE User_ID = ? AND Item_ID = ?;`,
+            [quantity, user, id]
+        );
+
+        // 判斷是否有成功更新
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Item quantity updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Item not found in the shopping cart' });
+        }
+    } catch (error) {
+        console.error('Error updating item quantity:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+APP.post('/api/delete/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { id } = req.body; // 從請求中獲取要刪除的 Item_ID
+    const user = (req.user as JwtPayload).username; // 從認證 token 中獲取 User_ID
+
+    try {
+        // 執行刪除語句
+        const [result] = await pool.execute<ResultSetHeader>(
+            `DELETE FROM wish 
+             WHERE User_ID = ? AND Item_ID = ?;`,
+            [user, id]
+        );
+
+        // 判斷是否有成功刪除
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Item deleted successfully from the shopping cart' });
+        } else {
+            res.status(404).json({ message: 'Item not found in the shopping cart' });
+        }
+    } catch (error) {
+        console.error('Error deleting item from shopping cart:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
