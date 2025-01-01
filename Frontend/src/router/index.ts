@@ -8,6 +8,7 @@ import UserCenterView from "@/views/UserCenterView.vue";
 import ListItemView from "@/views/ListItemView.vue";
 import ItemView from '@/views/ItemView.vue';
 import CheckoutView from "@/views/CheckoutView.vue";
+import AdminView from "@/views/AdminView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,6 +62,11 @@ const router = createRouter({
       path: '/checkout',
       name: 'checkout',
       component: CheckoutView,
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: AdminView,
     }
   ],
 })
