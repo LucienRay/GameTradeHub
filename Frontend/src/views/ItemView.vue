@@ -4,12 +4,10 @@
     <SearchBar class="search-bar" />
     <div class="item-info-container">
         <div class="info">
-            <div class="title">Title</div>
-            <img src="https://via.placeholder.com/500x300"/>
-            <div class="description">
-            This is a detailed description of the item. It provides information about the features, materials, and any other relevant details.
-            </div>
-            <div class="price">Price: $99.99</div>
+            <div class="title">{{itemInfo?.Title}}</div>
+            <img :src="itemInfo?.path" />
+            <div class="description">{{itemInfo?.Description}}</div>
+            <div class="price">Price: ${{ itemInfo?.Price }}</div>
             <button class="add-to-cart">加入購物車</button>
         </div>
     </div>
@@ -18,9 +16,32 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
+import {ref,onMounted} from "vue";
+import axios from "axios";
+
+interface ItemInfo {
+  Title: string;
+  Price: number;
+  Quantity: number;
+  Description: string;
+  Seller_ID: string;
+  Game_ID: string;
+  path: string;
+}
 
 const route = useRoute();
 const itemID = route.params.ID;
+const itemInfo = ref<ItemInfo | null>(null);
+
+
+onMounted(() => {
+    axios.post('/api/get/ItemINFO', {ID: itemID}).then(response => {
+      itemInfo.value = response.data as ItemInfo; // 顯式轉換型態
+      console.log(itemInfo.value);
+    }).catch(error => {
+      console.log(error);
+    });
+});
 </script>
 
 <style scoped>
@@ -77,5 +98,13 @@ const itemID = route.params.ID;
 
 .add-to-cart:hover {
   background-color: #4A9BD6;
+}
+
+img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 </style>
