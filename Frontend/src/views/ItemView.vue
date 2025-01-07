@@ -2,11 +2,12 @@
   <div class="container">
     <ToolBar class="toolbar" />
     <SearchBar class="search-bar" />
+    <ChatWidget ref="chatWidget" class="chatWidget" />
     <div class="item-info-container">
       <div class="info">
-        <div class="title">{{itemInfo?.Title}}</div>
+        <div class="title">{{ itemInfo?.Title }}</div>
         <img :src="itemInfo?.path" />
-        <div class="description">{{itemInfo?.Description}}</div>
+        <div class="description">{{ itemInfo?.Description }}</div>
         <div class="price">Price: ${{ itemInfo?.Price }}</div>
         <div class="quantity">Available Quantity: {{ itemInfo?.Quantity }}</div>
         <div class="quantity-selector">
@@ -20,6 +21,7 @@
           />
         </div>
         <button class="add-to-cart" @click="addToCart">加入購物車</button>
+        <button class="chat-with-seller" @click="chatWithSeller">跟賣家聊天</button>
       </div>
     </div>
   </div>
@@ -27,8 +29,9 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import {ref,onMounted} from "vue";
+import { ref, onMounted } from "vue";
 import axios from "axios";
+import ChatWidget from "@/components/ChatWidget.vue";
 
 interface ItemInfo {
   Title: string;
@@ -45,13 +48,16 @@ const itemID = route.params.ID;
 const itemInfo = ref<ItemInfo | null>(null);
 const selectedQuantity = ref(1);
 
+// 用來操作 ChatWidget 元件的方法
+const chatWidgetRef = ref();
+
 onMounted(() => {
-    axios.post('/api/get/ItemINFO', {ID: itemID}).then(response => {
-      itemInfo.value = response.data as ItemInfo; // 顯式轉換型態
-      console.log(itemInfo.value);
-    }).catch(error => {
-      console.log(error);
-    });
+  axios.post('/api/get/ItemINFO', { ID: itemID }).then(response => {
+    itemInfo.value = response.data as ItemInfo;
+    console.log(itemInfo.value);
+  }).catch(error => {
+    console.log(error);
+  });
 });
 
 const addToCart = () => {
@@ -62,13 +68,29 @@ const addToCart = () => {
     };
     axios.post('/api/add/shoppingCart', cartItem).then(response => {
       console.log(response.data);
-      alert('新增成功！'); // 彈出提示框
+      alert('新增成功！');
     }).catch(error => {
       console.log(error);
-      alert('新增失敗，請稍後再試！'); // 如果失敗，顯示錯誤提示
+      alert('新增失敗，請稍後再試！');
     });
   } else {
-    console.error("Invalid quantity");
+    console.error("無效的數量");
+  }
+};
+
+const chatWithSeller = () => {
+  if (itemInfo.value) {
+    const sellerID = itemInfo.value.Seller_ID;
+    const message = {
+      sender: 'You',
+      receiver: sellerID,
+      content: "Hello! I'm interested in your item.",
+      timestamp: new Date().toISOString(),
+    };
+
+    // 傳送訊息到後端 API
+    axios.post('/api/add/messages', message)
+
   }
 };
 </script>
@@ -93,8 +115,8 @@ const addToCart = () => {
 }
 
 .info {
-  padding: 1% ;
-  color: white
+  padding: 1%;
+  color: white;
 }
 
 .title {
@@ -127,6 +149,27 @@ const addToCart = () => {
   transition: 0.3s;
 }
 
+.chat-with-seller {
+  margin-left: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #f39c12;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.add-to-cart:hover {
+  background-color: #4A9BD6;
+}
+
+.chat-with-seller:hover {
+  background-color: #d68910;
+}
+
 .description {
   font-size: 24px;
 }
@@ -134,10 +177,6 @@ const addToCart = () => {
 .price {
   font-size: 24px;
   font-weight: bold;
-}
-
-.add-to-cart:hover {
-  background-color: #4A9BD6;
 }
 
 img {

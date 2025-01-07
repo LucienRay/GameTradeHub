@@ -2,6 +2,7 @@
     <div class="search-bar-container">
       <button class="search-bar-button" @click="goToHome">首頁</button>
       <button class="search-bar-button" @click="orderView">訂單管理</button>
+      <button class="search-bar-button" @click="itemManage">商品管理</button>
       <button class="search-bar-button" @click="userCenter">個人資料</button>
     </div>
 </template>
@@ -51,6 +52,12 @@ function orderView() {
     router.push("/order");
 }
 
+function itemManage() {
+  // Navigate to ItemManageView (make sure your router is configured correctly)
+  auth();
+  if(isAuthenticated.value)
+    router.push("/manageItems");
+}
 </script>
 
 <style scoped>

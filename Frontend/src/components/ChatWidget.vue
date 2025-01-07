@@ -11,7 +11,7 @@
       <!-- Friend List (Left) -->
       <div class="friend-list">
         <div v-for="friend in friends" :key="friend.id" class="friend-item"
-          :class="{ selected: selectedFriend && selectedFriend.id === friend.id }" @click="selectFriend(friend)">
+             :class="{ selected: selectedFriend && selectedFriend.id === friend.id }" @click="selectFriend(friend)">
           <span>{{ friend.name }}</span>
         </div>
       </div>
@@ -43,119 +43,124 @@
   </div>
 </template>
 
-<script>
-import { ref } from 'vue';
-// Import Axios
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 
-export default {
-  setup() {
-    const isChatOpen = ref(false);
+interface Friend {
+  id: string;
+  name: string;
+}
 
-    function toggleChat() {
-      isChatOpen.value = !isChatOpen.value;
-    }
+const ws = ref<WebSocket | null>(null);
+const friends = ref<Friend[]>([]); // 好友列表
+const chatMessages = ref<{ [key: string]: any[] }>({}); // 聊天記錄
+const selectedFriend = ref<Friend | null>(null); // 選中的好友
+const newMessage = ref(''); // 新訊息內容
+const isChatOpen = ref(false); // 聊天室開關
 
-    return {
-      isChatOpen,
-      toggleChat,
-    };
-  },
-  data() {
-    return {
-      friends: [
-        { id: 1, name: "Alice" },
-        { id: 2, name: "Bob" },
-        { id: 3, name: "Charlie" },
-      ],
-      selectedFriend: null,
-      chatMessages: {}, // Store messages for each friend
-      newMessage: "",
-    };
-  },
-  methods: {
-    // Simulate selecting a friend and loading messages
-    async selectFriend(friend) {
-      this.selectedFriend = friend;
-      if (!this.chatMessages[friend.id]) {
-        this.chatMessages[friend.id] = await this.fetchChatMessages(friend.id);
-      }
-    },
+// 切換聊天室
+const toggleChat = () => {
+  isChatOpen.value = !isChatOpen.value;
 
-    // Simulate fetching chat messages from a backend
-    async fetchChatMessages(friendId) {
-      // Simulate a delay to mimic an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+  if (isChatOpen.value) {
+    // 獲取聊天記錄
+    axios
+        .post('/api/get/Messages')
+        .then((response) => {
+          const result: { [key: string]: { Time: string; Context: string; mode: boolean }[] } = response.data;
 
-      // Return mock data
-      return [
-        { id: 1, sender: "Alice", content: "Hey, how are you?", timestamp: "2024-11-25T10:30:00Z" },
-        { id: 2, sender: "You", content: "I'm good, thanks!", timestamp: "2024-11-25T10:32:00Z" },
-      ];
+          // 更新好友列表
+          friends.value = Object.keys(result).map((user) => ({
+            id: user,
+            name: user,
+          }));
 
-      // Uncomment and use the following code to fetch real data from the backend
-      /*
-      try {
-        const response = await axios.get(`/api/chat/${friendId}`);
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching chat messages:', error);
-        return [];
-      }
-      */
-    },
-
-    // Send a message (in a real app, send this to the server)
-    sendMessage() {
-      if (this.newMessage.trim() && this.selectedFriend) {
-        const friendId = this.selectedFriend.id;
-        if (!this.chatMessages[friendId]) {
-          this.chatMessages[friendId] = [];
-        }
-        this.chatMessages[friendId].push({
-          id: this.chatMessages[friendId].length + 1,
-          sender: "You",
-          content: this.newMessage,
-          timestamp: new Date().toISOString(),
+          // 更新聊天記錄
+          for (const [user, messages] of Object.entries(result)) {
+            chatMessages.value[user] = messages.map((msg, index) => ({
+              id: index + 1,
+              sender: msg.mode ? 'You' : user,
+              content: msg.Context,
+              timestamp: msg.Time,
+            }));
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching chat history:', error);
         });
-        this.newMessage = "";
-        this.scrollToBottom();
+  }
+};
 
-        // Uncomment and use the following code to send the message to the backend
-        /*
-        axios.post(`/api/chat/${friendId}`, {
-          sender: "You",
-          content: this.newMessage,
-          timestamp: new Date().toISOString(),
-        }).then(response => {
-          console.log('Message sent:', response.data);
-        }).catch(error => {
-          console.error('Error sending message:', error);
-        });
-        */
-      }
-    },
+// 獲取當前選中好友的聊天記錄
+const currentChatMessages = computed(() => {
+  return selectedFriend.value ? chatMessages.value[selectedFriend.value.id] || [] : [];
+});
 
-    // Scroll chat to the bottom when a new message is sent
-    scrollToBottom() {
-      const container = this.$refs.messagesContainer;
-      if (container) container.scrollTop = container.scrollHeight;
-    },
+// 根據消息發送方設定 CSS 類別
+const messageClass = (message: any) => {
+  return message.sender === 'You' ? 'sent' : 'received';
+};
 
-    // Format message timestamp
-    formatDate(timestamp) {
-      return new Date(timestamp).toLocaleTimeString();
-    },
+// 格式化日期
+const formatDate = (timestamp: string) => {
+  return new Date(timestamp).toLocaleTimeString();
+};
 
-    // Determine the CSS class for a message (sent or received)
-    messageClass(message) {
-      return message.sender === "You" ? "sent" : "received";
-    },
-  },
-  computed: {
-    currentChatMessages() {
-      return this.selectedFriend ? this.chatMessages[this.selectedFriend.id] || [] : [];
+// 初始化 WebSocket 和獲取聊天記錄
+onMounted(() => {
+  ws.value = new WebSocket('wss://www.xn--rhy.tw/ws/');
+
+  ws.value.onopen = () => {
+    console.log('Connected to WebSocket server');
+  };
+
+  ws.value.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    console.log('Received message:', message);
+    if (!chatMessages.value[message.sender]) {
+
+      chatMessages.value[message.sender] = [];
     }
+    chatMessages.value[message.sender].push(message);
+  };
+
+  ws.value.onclose = () => {
+    console.log('Disconnected from WebSocket server');
+  };
+});
+
+onUnmounted(() => {
+  if (ws.value) {
+    ws.value.close();
+  }
+});
+
+// 發送消息
+const sendMessage = () => {
+  if (newMessage.value.trim() && selectedFriend.value) {
+    const message = {
+      sender: 'You',
+      receiver: selectedFriend.value.id,
+      content: newMessage.value,
+      timestamp: new Date().toISOString(),
+    };
+
+    axios.post('/api/add/messages', message);
+    if (!chatMessages.value[selectedFriend.value.id]) {
+      chatMessages.value[selectedFriend.value.id] = [];
+    }
+    chatMessages.value[selectedFriend.value.id].push(message);
+
+    newMessage.value = '';
+  }
+};
+
+// 選擇好友
+const selectFriend = (friend: Friend) => {
+  selectedFriend.value = friend;
+  if (!chatMessages.value[friend.id]) {
+    chatMessages.value[friend.id] = [];
   }
 };
 </script>
@@ -213,6 +218,7 @@ export default {
 }
 
 .chat-log {
+  width: 70%;
   flex: 1;
   padding: 10px;
   display: flex;
@@ -233,7 +239,8 @@ export default {
   overflow-y: auto;
   margin-bottom: 10px;
   padding-right: 10px;
-  max-height: calc(70vh - 100px);
+  height: 520px;
+  scroll-behavior: smooth;
   /* Adjust height to fit within the container */
 }
 
@@ -258,6 +265,7 @@ export default {
 }
 
 .message-content {
+  word-wrap: break-word;
   display: block;
 }
 
@@ -295,10 +303,6 @@ export default {
 
 .send-button:hover {
   background-color: #0056b3;
-}
-
-.messages {
-  scroll-behavior: smooth;
 }
 
 .chat-toggle-btn {

@@ -10,6 +10,7 @@ import ItemView from '@/views/ItemView.vue';
 import CheckoutView from "@/views/CheckoutView.vue";
 import AdminView from "@/views/AdminView.vue";
 import OrderView from "@/views/OrderView.vue";
+import MangeItemView from "@/views/MangeItemView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -73,6 +74,11 @@ const router = createRouter({
       path: '/order',
       name: 'order',
       component: OrderView,
+    },
+    {
+      path: '/manageItems',
+      name: 'ordmangeItems',
+      component: MangeItemView,
     }
   ],
 })

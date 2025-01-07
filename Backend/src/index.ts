@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import validator from 'validator';
 import multer from 'multer';
+import WebSocket from 'ws';
 
 const APP = express()
 
@@ -352,6 +353,50 @@ APP.post('/api/get/Messages', authenticate, async (req: AuthenticatedRequest, re
     } catch (error) {
         console.error('Error fetching messages:', error);
         res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/add/messages', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+
+    try {
+        // 取得請求中的訊息內容
+        const { sender, receiver, content, timestamp } = req.body;
+
+        // 驗證必要欄位
+        if (!sender || !receiver || !content || !timestamp) {
+            res.status(400).json({ error: 'Missing required fields' });
+            return;
+        }
+
+        // 將 ISO 8601 格式的 timestamp 轉換為 MySQL 支援的格式
+        const formattedTimestamp = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ');
+
+        // 插入訊息到資料庫
+        const query = `
+            INSERT INTO messages (Sender_ID, Receiver_ID, Context, Sent_Time)
+            VALUES (?, ?, ?, ?)
+        `;
+        await pool.execute(query, [user, receiver, content, formattedTimestamp]);
+
+        // 廣播訊息給所有 WebSocket 客戶端
+        const message = {
+            sender: user,
+            receiver,
+            content,
+            timestamp,
+        };
+
+        clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify(message));
+            }
+        });
+        // 回傳成功的回應
+        res.status(200).json({ message: 'Message saved successfully' });
+    } catch (error) {
+        console.error('Error saving message:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -738,6 +783,22 @@ APP.post('/api/orders/cancel', authenticate, async (req: AuthenticatedRequest, r
     }
 });
 
+APP.post('/api/get/MyItems', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT i.ID, i.Title, i.Price, i.Quantity, i.Description
+             FROM items i
+             WHERE i.Seller_ID = ?`,
+            [user]
+        );
+
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching shopping cart details:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 // APP.listen(80)
 
@@ -745,7 +806,17 @@ const options = {
     key: fs.readFileSync('./ssl/cloudflare-origin.key'),
     cert: fs.readFileSync('./ssl/cloudflare-origin.pem'),
 };
+const server = https.createServer(options, APP);
+const wss = new WebSocket.Server({ server });
+let clients: any[] = [];
+wss.on('connection', (ws) => {
+    console.log('New client connected');
+    clients.push(ws);
 
-
+    ws.on('close', () => {
+        console.log('Client disconnected');
+        clients = clients.filter(client => client !== ws);
+    });
+});
 // 啟動 HTTPS 伺服器
-https.createServer(options, APP).listen(443);
+server.listen(443);

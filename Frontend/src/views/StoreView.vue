@@ -2,6 +2,7 @@
   <div class="container">
     <ToolBar class="toolbar"/>
     <SearchBar class="search-bar" />
+    <ChatWidget class="chatWidget" />
     <div class="search-container">
       <input type="text" v-model="searchQuery" placeholder="搜尋內容..." class="search-input" />
     </div>
