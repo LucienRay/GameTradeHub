@@ -22,6 +22,7 @@ import axios from "axios";
 
 const Nickname = ref('');
 const isAuthenticated = ref(false);
+const isAdmin = ref(false);
 const router = useRouter();
 
 // 定義工具按鈕數據
@@ -69,6 +70,15 @@ const tools = ref([
     },
     condition: () => isAuthenticated.value, // 只有已登入時顯示
   },
+  {
+    label: "管理",
+    tooltip: "管理",
+    icon: "fa fa-plus",
+    action: () => {
+      router.push('/admin');
+    },
+    condition: () => isAdmin.value, // 只有已登入時顯示
+  },
 // {
 //   label: "|",
 //   tooltip: "保存進度",
@@ -99,12 +109,14 @@ onMounted(() => {
       .catch(() => {
         isAuthenticated.value = false; // 如果驗證失敗
       });
+  axios.post('/api/auth/admin')
+      .then(response => {
+        isAdmin.value = true;
+      })
+      .catch(() => {
+        isAdmin.value = false;
+      });
 });
-
-// 點擊暱稱的事件處理
-const handleNicknameClick = () => {
-  router.push('/userCenter');
-};
 </script>
 
 <style scoped>
