@@ -555,6 +555,31 @@ APP.delete('/api/:table/:id', authenticate, async (req, res) => {
     }
 });
 
+APP.post('/api/add/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    const {ID, Quantity} = req.body;
+    try {
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT * FROM wish WHERE User_ID = ? AND Item_ID = ?', [user, ID]);
+
+
+        if (queries.length === 0) {
+            await pool.execute(
+                'INSERT INTO wish (User_ID, Item_ID, Quantity) VALUES (?, ?, ?)',
+                [user, ID, Quantity]
+            )
+        } else {
+            await pool.execute(
+                'UPDATE wish SET Quantity = Quantity + ? WHERE User_ID = ? AND Item_ID = ?',
+                [Quantity, user, ID]
+            )
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error adding item to cart:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 // APP.listen(80)
 
