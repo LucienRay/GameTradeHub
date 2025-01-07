@@ -68,6 +68,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  seller: string;
 }
 
 interface Coupon {
@@ -110,6 +111,8 @@ onMounted(() => {
   axios.post('/api/get/shoppingCart')
       .then((response) => {
         cartItems.value = response.data;
+        console.log(cartItems.value);
+        console.log(response.data);
       })
       .catch((error) => {
         console.error('Error fetching cart items:', error);
@@ -147,6 +150,7 @@ async function submitOrder() {
       items: cartItems.value.map((item) => ({
         id: item.id,
         quantity: item.quantity,
+        Seller_ID: item.seller,
       })),
       coupon: selectedCoupon.value?.id || null,
       totalPrice: totalPrice.value,
