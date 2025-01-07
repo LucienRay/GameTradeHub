@@ -48,9 +48,9 @@ function userCenter() {
 <style scoped>
 .search-bar-container {
   display: flex;
-  justify-content: center; 
-  align-items: center; 
-  margin-left: 15%; 
+  justify-content: center;
+  align-items: center;
+  margin-left: 15%;
   margin-top: 15px;
   background: linear-gradient(90deg, rgba(62, 103, 150, 0.919) 11.38%, rgba(58, 120, 177, 0.8) 25.23%, rgb(15, 33, 110) 100%);
   height: 35px;
@@ -71,6 +71,6 @@ function userCenter() {
 }
 
 .search-bar-button:hover {
-  color: #007bff; 
+  color: #007bff;
 }
 </style>

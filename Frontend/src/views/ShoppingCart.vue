@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import {ref, computed, onMounted} from 'vue';
 import axios from "axios";
+import router from "@/router";
 
   interface CartItem {
     id: number;
@@ -84,7 +85,7 @@ import axios from "axios";
   }
 
   function checkout() {
-    alert('結帳功能尚未實現。');
+    router.push('/checkout');
   }
 
   onMounted(() => {
