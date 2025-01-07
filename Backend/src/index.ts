@@ -625,16 +625,19 @@ APP.post('/api/add/order', authenticate, async (req: AuthenticatedRequest, res) 
 
         // 插入每個商品（如果多商品應循環插入）
         for (const item of items) {
+            console.log(item);
             await connection.execute(
-                `INSERT INTO orders (Date, State, Payment_Method, Payment_State, Coupon_ID, Item_ID, Quantity)
-                 VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO orders (Date, State, Payment_Method, Payment_State, Coupon_ID, Item_ID, Quantity, Seller_ID, Buyer_ID)
+                 VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     1, // 訂單狀態
                     '線上',
-                    '待付款',
+                    '已付款',
                     coupon || null,
                     item.id,
-                    item.quantity
+                    item.quantity,
+                    item.Seller_ID,
+                    userId
                 ]
             );
         }
@@ -663,6 +666,77 @@ APP.post('/api/add/order', authenticate, async (req: AuthenticatedRequest, res) 
     }
 });
 
+APP.post('/api/get/orders', authenticate, async (req: AuthenticatedRequest, res) => {
+    try {
+        const [orders] = await pool.execute(
+            `SELECT * FROM orders`
+        );
+        res.json(orders);
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+APP.post('/api/orders/complete', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { orderID } = req.body;
+
+    // 驗證資料
+    if (!orderID) {
+        res.status(400).json({ error: '缺少訂單 ID' });
+        return;
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 更新訂單狀態為已完成 (State = 2)
+        const [result] = await connection.execute(
+            'UPDATE orders SET State = 2 WHERE ID = ?',
+            [orderID]
+        );
+
+        await connection.commit();
+        res.json({ success: true, message: `訂單 ${orderID} 已標記為完成` });
+    } catch (error) {
+        console.error('Error marking order as complete:', error);
+        await connection.rollback();
+        res.status(500).json({ error: '無法標記訂單為完成' });
+    } finally {
+        connection.release();
+    }
+});
+
+APP.post('/api/orders/cancel', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { orderID } = req.body;
+
+    // 驗證資料
+    if (!orderID) {
+        res.status(400).json({ error: '缺少訂單 ID' });
+        return;
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 更新訂單狀態為已取消 (State = 3)
+        const [result] = await connection.execute(
+            'UPDATE orders SET State = 3 WHERE ID = ?',
+            [orderID]
+        );
+
+        await connection.commit();
+        res.json({ success: true, message: `訂單 ${orderID} 已標記為取消` });
+    } catch (error) {
+        console.error('Error canceling order:', error);
+        await connection.rollback();
+        res.status(500).json({ error: '無法取消訂單' });
+    } finally {
+        connection.release();
+    }
+});
 
 
 // APP.listen(80)

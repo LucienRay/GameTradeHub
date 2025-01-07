@@ -1,8 +1,7 @@
 <template>
     <div class="search-bar-container">
       <button class="search-bar-button" @click="goToHome">首頁</button>
-      <button class="search-bar-button">我的訂單</button>
-      <button class="search-bar-button">訂單管理</button>
+      <button class="search-bar-button" @click="orderView">訂單管理</button>
       <button class="search-bar-button" @click="userCenter">個人資料</button>
     </div>
 </template>
@@ -28,6 +27,7 @@ function auth(){
             });
       })
       .catch(() => {
+        alert("Please login first!");
         isAuthenticated.value = false; // 如果驗證失敗
       });
 };
@@ -42,7 +42,15 @@ function userCenter() {
   auth();
   if(isAuthenticated.value)
     router.push("/userCenter");
-} 
+}
+
+function orderView() {
+  // Navigate to OrderView (make sure your router is configured correctly)
+  auth();
+  if(isAuthenticated.value)
+    router.push("/order");
+}
+
 </script>
 
 <style scoped>

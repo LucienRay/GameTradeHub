@@ -44,6 +44,7 @@ const tools = ref([
       axios.post('/api/logout')
           .then(() => {
             isAuthenticated.value = false;
+            isAdmin.value = false;
             router.push('/');
           })
           .catch(() => {
