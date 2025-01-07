@@ -62,8 +62,10 @@ const addToCart = () => {
     };
     axios.post('/api/add/shoppingCart', cartItem).then(response => {
       console.log(response.data);
+      alert('新增成功！'); // 彈出提示框
     }).catch(error => {
       console.log(error);
+      alert('新增失敗，請稍後再試！'); // 如果失敗，顯示錯誤提示
     });
   } else {
     console.error("Invalid quantity");
