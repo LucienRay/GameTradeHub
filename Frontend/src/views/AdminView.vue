@@ -364,9 +364,18 @@ body {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
-  border: 1px solid var(--primary-color);
-  border-radius: 5px;
-  background-color: var(--primary-color);
-  color: var(--text-color);
+  border: 2px solid #66c0f4; /* 外框為藍色 */
+  border-radius: 10px; /* 圓角效果 */
+  background-color: var(--primary-color); /* 背景顏色 */
+  color: var(--text-color); /* 文字顏色 */
+  font-size: 14px; /* 字體大小 */
+  transition: border-color 0.3s, box-shadow 0.3s; /* 增加過渡效果 */
+}
+
+/* 聚焦效果 */
+.input-field:focus {
+  border-color: #4fa3dd; /* 聚焦時的邊框顏色 */
+  box-shadow: 0 0 5px rgba(79, 163, 221, 0.8); /* 添加陰影 */
+  outline: none; /* 移除默認的外框 */
 }
 </style>
