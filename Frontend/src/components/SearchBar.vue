@@ -1,7 +1,8 @@
 <template>
     
     <div class="search-bar-container">
-      <button class="search-bar-button">首頁</button>
+      <button class="search-bar-button" @click="goToHome">首頁</button>
+      
       <button class="search-bar-button">我的訂單</button>
       <button class="search-bar-button">訂單管理</button>
       <button class="search-bar-button">個人資料</button>
@@ -26,6 +27,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+const router = useRouter();
+
+function goToHome() {
+  // Navigate to HomeView (make sure your router is configured correctly)
+  router.push("/home");
+}
 
 const searchQuery = ref("");
 const suggestions = ref<string[]>([
