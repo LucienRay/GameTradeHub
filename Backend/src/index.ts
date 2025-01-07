@@ -235,6 +235,16 @@ APP.post('/api/auth', authenticate,async (req:AuthenticatedRequest, res) => {
     res.json({ isAuthenticated: true, user: req.user });
 });
 
+APP.post('/api/auth/admin', authenticate,async (req:AuthenticatedRequest, res) => {
+    console.log(req.user);
+    const [queries] = await pool.execute<RowDataPacket[]>('SELECT Permission FROM users WHERE ID = ?', [(req.user as JwtPayload).username]);
+    if (queries[0].Permission != 1) {
+        res.sendStatus(403);
+        return;
+    }
+    res.json({ isAdmin: true, user: req.user });
+});
+
 // 登出路由，清除 JWT Token
 APP.post('/api/logout', (req: Request, res: Response) => {
     // 清除 Cookie 中的 authToken
@@ -450,6 +460,98 @@ APP.post('/api/delete/shoppingCart', authenticate, async (req: AuthenticatedRequ
     } catch (error) {
         console.error('Error deleting item from shopping cart:', error);
         res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+APP.post('/api/get/tableData', authenticate, async (req: AuthenticatedRequest, res) => {
+    try {
+        const { tableName } = req.body;
+
+        // 檢查 tableName 是否為允許的資料表
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(tableName)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 動態查詢資料表內容
+        const [queries] = await pool.query(`SELECT * FROM \`${tableName}\``);
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching table data:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.put('/api/:table/:id', authenticate, async (req, res) => {
+    try {
+        const { table, id } = req.params; // 獲取資料表名和主鍵 ID
+        const data = req.body; // 獲取要更新的數據
+
+        console.log(data);
+        console.log(table);
+        console.log(id);
+        // 檢查資料表名稱是否合法
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(table)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 動態生成 SQL 語句，安全地更新數據
+        const columns = Object.keys(data).map((key) => `\`${key}\` = ?`).join(', ');
+        const values = Object.values(data);
+
+        await pool.query(`UPDATE \`${table}\` SET ${columns} WHERE id = ?`, [...values, id]);
+        res.send('更新成功');
+    } catch (error) {
+        console.error('更新失敗：', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/:table', authenticate, async (req, res) => {
+    try {
+        const { table } = req.params; // 獲取資料表名稱
+        const data = req.body; // 獲取要新增的數據
+
+        // 檢查資料表名稱是否合法
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(table)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 動態生成 SQL 語句，安全地插入數據
+        const columns = Object.keys(data).map((key) => `\`${key}\``).join(', ');
+        const placeholders = Object.keys(data).map(() => '?').join(', ');
+        const values = Object.values(data);
+
+        await pool.query(`INSERT INTO \`${table}\` (${columns}) VALUES (${placeholders})`, values);
+        res.send('新增成功');
+    } catch (error) {
+        console.error('新增失敗：', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.delete('/api/:table/:id', authenticate, async (req, res) => {
+    try {
+        const { table, id } = req.params; // 獲取資料表名稱和 ID
+
+        // 檢查資料表名稱是否合法
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(table)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 刪除資料
+        await pool.query(`DELETE FROM \`${table}\` WHERE ID = ?`, [id]);
+        res.send('刪除成功');
+    } catch (error) {
+        console.error('刪除失敗：', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
