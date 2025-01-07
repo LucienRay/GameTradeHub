@@ -18,10 +18,11 @@
 
       <!-- Profile 區塊 -->
       <div v-if="activeTab === 'profile'" class="tab-content">
-        <h1>Welcome, {{ userINFO.Nickname }}</h1>
+        <h1><strong>Welcome, {{ userINFO.Nickname }}</strong></h1>
         <div class="profile-card">
           <h2>Profile Information</h2>
           <p><strong>ID:</strong> {{ userINFO.ID }}</p>
+          <p><strong>Nickname:</strong> {{ userINFO.Nickname }}</p>
           <p><strong>Email:</strong> {{ userINFO.Email }}</p>
           <p><strong>Phone:</strong> {{ userINFO.Phone }}</p>
           <p><strong>SSN:</strong> {{ userINFO.SSN }}</p>
@@ -45,7 +46,6 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 
-// 定義使用者資訊的資料類型
 interface UserINFO {
   ID: number;
   SSN: string;
@@ -67,24 +67,22 @@ export default {
     const loading = ref(true);
     const activeTab = ref("profile");
 
-    // 切換選單的方法
     const switchTab = (tab: string) => {
       activeTab.value = tab;
     };
 
-    // 請求使用者資料
     onMounted(() => {
       axios
-          .post("/api/get/userINFO")
-          .then((response) => {
-            userINFO.value = response.data;
-          })
-          .catch((error) => {
-            console.error("Failed to fetch user info:", error);
-          })
-          .finally(() => {
-            loading.value = false;
-          });
+        .post("/api/get/userINFO")
+        .then((response) => {
+          userINFO.value = response.data;
+        })
+        .catch((error) => {
+          console.error("Failed to fetch user info:", error);
+        })
+        .finally(() => {
+          loading.value = false;
+        });
     });
 
     return {
@@ -98,21 +96,22 @@ export default {
 </script>
 
 <style scoped>
-/* 整體佈局 */
 .member-center {
   display: flex;
   height: 100vh;
-  background-color: #1b2838;
+  background-color: #1b2838; /* Steam-like dark background */
   color: #c7d5e0;
   font-family: Arial, sans-serif;
 }
 
-/* 左側導航欄 */
+/* Left Sidebar */
 .sidebar {
-  width: 200px;
+  width: 220px;
   background-color: #101822;
+  color: #c7d5e0;
   padding: 20px;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+  font-size: 18px;
 }
 
 .sidebar ul {
@@ -125,17 +124,18 @@ export default {
   margin-bottom: 10px;
   color: #c7d5e0;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background-color 0.3s;
+  border-left: 4px solid transparent;
 }
 
 .sidebar li.active,
 .sidebar li:hover {
-  background-color: #1f415e;
+  background-color: #2a475e;
   color: #fff;
   border-left: 4px solid #66c0f4;
 }
 
-/* 主內容 */
+/* Main Content */
 .content {
   flex-grow: 1;
   padding: 20px;
@@ -145,46 +145,74 @@ export default {
 .tab-content {
   max-width: 600px;
   margin: 0 auto;
+  background-color: #2a475e; /* Matching Steam accent */
+  padding: 20px;
+  border-radius: 5px;
 }
 
+.tab-content h1 {
+  margin-bottom: 15px;
+  border-bottom: 1px solid #66c0f4;
+  padding-bottom: 10px;
+}
+
+/* Profile card & Settings card */
 .profile-card,
 .settings-card {
-  background-color: #2a475e;
+  background-color: #1b2838;
   padding: 20px;
   margin-top: 20px;
   border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  color: #c7d5e0;
+  border: 1px solid #66c0f4;
 }
 
 .profile-card h2,
 .settings-card h2 {
   margin-bottom: 10px;
+  font-size: 36px;
 }
+
+.profile-card p strong,
+.settings-card p strong {
+  color: #66c0f4;
+  font-size: 36px;
+}
+
+.profile-card p ,
+.settings-card p  {
+  font-size: 36px;
+}
+
 
 .input-field {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
-  border: none;
+  border: 1px solid #66c0f4;
   border-radius: 3px;
-  font-size: 14px;
+  background-color: #0f151a;
+  color: #c7d5e0;
+  font-size: 36px;
 }
 
+/* Button */
 .btn {
-  background-color: #66c0f4;
+  background-color: #2593d2;
   color: #fff;
   padding: 10px 20px;
   border: none;
   cursor: pointer;
   border-radius: 3px;
   transition: background-color 0.3s;
+  font-size: 36px;
 }
 
 .btn:hover {
   background-color: #417aab;
 }
 
-/* Loading 樣式 */
+/* Loading Style */
 .loading {
   text-align: center;
   font-size: 20px;
