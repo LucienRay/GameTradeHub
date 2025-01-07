@@ -10,8 +10,7 @@
       <i :class="tool.icon"></i> {{ tool.label }}
     </button>
     <p v-if="isAuthenticated" class="nickname">
-      Hi
-      <button @click="handleNicknameClick" class="nickname-button">{{ Nickname }}</button>!
+      Hi {{ Nickname }}!
     </p>
   </div>
 </template>
@@ -58,6 +57,15 @@ const tools = ref([
     icon: "fa fa-plus",
     action: () => {
       router.push('/cart');
+    },
+    condition: () => isAuthenticated.value, // 只有已登入時顯示
+  },
+  {
+    label: "上架商品",
+    tooltip: "上架商品",
+    icon: "fa fa-plus",
+    action: () => {
+      router.push('/listItem');
     },
     condition: () => isAuthenticated.value, // 只有已登入時顯示
   },

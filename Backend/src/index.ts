@@ -581,6 +581,90 @@ APP.post('/api/add/shoppingCart', authenticate, async (req: AuthenticatedRequest
     }
 });
 
+APP.post('/api/get/coupons', authenticate, async (req: AuthenticatedRequest, res) => {
+    try {
+        const userId = (req.user as JwtPayload).username; // 從認證中獲取用戶 ID
+
+        // 執行查詢，只返回當前用戶的有效優惠券
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT * 
+             FROM coupons
+             WHERE User_ID = ? 
+             AND Start_Date <= NOW() 
+             AND End_Date >= NOW()`,
+            [userId]
+        );
+
+        // 將結果返回給前端
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching coupons:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/add/order', authenticate, async (req: AuthenticatedRequest, res) => {
+    const userId = (req.user as JwtPayload).username; // 從認證中獲取用戶 ID
+    const { items, coupon, totalPrice } = req.body;
+
+    // 驗證請求數據
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        res.status(400).json({ error: '購物車內容無效' });
+        return;
+    }
+
+    if (!totalPrice || totalPrice <= 0) {
+        res.status(400).json({ error: '訂單總金額無效' });
+        return;
+    }
+
+    // 開啟資料庫連接
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 插入每個商品（如果多商品應循環插入）
+        for (const item of items) {
+            await connection.execute(
+                `INSERT INTO orders (Date, State, Payment_Method, Payment_State, Coupon_ID, Item_ID, Quantity)
+                 VALUES (NOW(), ?, ?, ?, ?, ?, ?)`,
+                [
+                    1, // 訂單狀態
+                    '線上',
+                    '待付款',
+                    coupon || null,
+                    item.id,
+                    item.quantity
+                ]
+            );
+        }
+
+        // 清空該用戶的 `wish` 資料
+        await connection.execute(
+            `DELETE FROM wish WHERE User_ID = ?`,
+            [userId]
+        );
+
+        // 提交交易
+        await connection.commit();
+        connection.release();
+
+        res.json({ success: true});
+    } catch (error) {
+        console.error('Error creating order:', error);
+
+        // 發生錯誤時回滾交易
+        if (connection) {
+            await connection.rollback();
+            connection.release();
+        }
+
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+
+
 // APP.listen(80)
 
 const options = {
