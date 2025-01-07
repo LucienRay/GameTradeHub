@@ -1,17 +1,28 @@
 <template>
-<div class="container">
+  <div class="container">
     <ToolBar class="toolbar" />
     <SearchBar class="search-bar" />
     <div class="item-info-container">
-        <div class="info">
-            <div class="title">{{itemInfo?.Title}}</div>
-            <img :src="itemInfo?.path" />
-            <div class="description">{{itemInfo?.Description}}</div>
-            <div class="price">Price: ${{ itemInfo?.Price }}</div>
-            <button class="add-to-cart">加入購物車</button>
+      <div class="info">
+        <div class="title">{{itemInfo?.Title}}</div>
+        <img :src="itemInfo?.path" />
+        <div class="description">{{itemInfo?.Description}}</div>
+        <div class="price">Price: ${{ itemInfo?.Price }}</div>
+        <div class="quantity">Available Quantity: {{ itemInfo?.Quantity }}</div>
+        <div class="quantity-selector">
+          <label for="quantity">Select Quantity:</label>
+          <input
+              id="quantity"
+              type="number"
+              v-model.number="selectedQuantity"
+              :min="1"
+              :max="itemInfo?.Quantity || 1"
+          />
         </div>
+        <button class="add-to-cart" @click="addToCart">加入購物車</button>
+      </div>
     </div>
-</div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -32,7 +43,7 @@ interface ItemInfo {
 const route = useRoute();
 const itemID = route.params.ID;
 const itemInfo = ref<ItemInfo | null>(null);
-
+const selectedQuantity = ref(1);
 
 onMounted(() => {
     axios.post('/api/get/ItemINFO', {ID: itemID}).then(response => {
@@ -42,6 +53,22 @@ onMounted(() => {
       console.log(error);
     });
 });
+
+const addToCart = () => {
+  if (selectedQuantity.value > 0 && itemInfo.value) {
+    const cartItem = {
+      ID: itemID,
+      Quantity: selectedQuantity.value,
+    };
+    axios.post('/api/add/shoppingCart', cartItem).then(response => {
+      console.log(response.data);
+    }).catch(error => {
+      console.log(error);
+    });
+  } else {
+    console.error("Invalid quantity");
+  }
+};
 </script>
 
 <style scoped>
@@ -55,26 +82,37 @@ onMounted(() => {
 }
 
 .item-info-container {
-    background: linear-gradient(180deg, rgba(62, 103, 150, 0.919) 11.38%, rgba(58, 120, 177, 0.8) 25.23%, rgb(15, 33, 110) 100%);
-    width: 70%;
-    height: 80%;
-    margin-left: 15%;
-    margin-top: 35px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
-    
+  background: linear-gradient(180deg, rgba(62, 103, 150, 0.919) 11.38%, rgba(58, 120, 177, 0.8) 25.23%, rgb(15, 33, 110) 100%);
+  width: 70%;
+  height: 80%;
+  margin-left: 15%;
+  margin-top: 35px;
+  box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
 }
 
 .info {
-    padding: 1% ;
-    color: white
+  padding: 1% ;
+  color: white
 }
 
 .title {
-    color: white;
-    font-size: 36px;
-    font-weight: bold;
-    
+  color: white;
+  font-size: 36px;
+  font-weight: bold;
 }
+
+.quantity-selector {
+  margin: 10px 0;
+  color: white;
+  font-size: 18px;
+}
+
+.quantity-selector input {
+  width: 60px;
+  padding: 5px;
+  font-size: 16px;
+}
+
 .add-to-cart {
   padding: 10px 20px;
   font-size: 16px;
@@ -88,12 +126,12 @@ onMounted(() => {
 }
 
 .description {
-    font-size: 24px;
+  font-size: 24px;
 }
 
-.price{
-    font-size: 24px;
-    font-weight: bold;
+.price {
+  font-size: 24px;
+  font-weight: bold;
 }
 
 .add-to-cart:hover {
