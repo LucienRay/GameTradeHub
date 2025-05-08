@@ -1,12 +1,14 @@
 import express, {Request, Response, NextFunction, request} from 'express'
 import path from 'path'
-import mysql, {RowDataPacket} from 'mysql2/promise';
+import mysql, {ResultSetHeader, RowDataPacket} from 'mysql2/promise';
 import https from 'https';
 import fs from 'fs';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import validator from 'validator';
+import multer from 'multer';
+import WebSocket from 'ws';
 
 const APP = express()
 
@@ -24,6 +26,21 @@ const pool = mysql.createPool({
 const SECRET_KEY = '62d6be3277e5bdd1b73800f195bc4a67500088b638109f7323123a420f1a3433';
 const allowedOrigins = ['https://localhost', 'https://www.xn--rhy.tw'];
 
+// 設定圖片上傳存儲位置
+const storage = multer.diskStorage({
+    // 設定檔案上傳目錄
+    destination: function (req, file, cb) {
+        cb(null, 'images/');
+    },
+    // 自定義檔案名稱，保留副檔名
+    filename: function (req, file, cb) {
+        const ext = path.extname(file.originalname); // 取得副檔名
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + ext); // 新檔名
+    },
+});
+const upload = multer({dest: 'images/', storage: storage });
+
 
 interface AuthenticatedRequest extends Request {
     user?: string | JwtPayload; // 用戶資料存放於 req.user
@@ -33,7 +50,6 @@ const authenticate = async (req: AuthenticatedRequest, res: Response, next:NextF
     const token = req.cookies.authToken;
 
     if (!token) {
-        console.log(token)
         res.sendStatus(401);
         return;
     }
@@ -130,14 +146,28 @@ APP.use(cors({
 APP.use(express.json())
 APP.use(cookieParser());
 
-
 APP.get('/', (request, response) => {
     response.sendFile(path.join(__dirname, 'www', 'index.html'))
 })
 
-APP.get('*', (request, response) => {
-    response.sendFile(path.join(__dirname, 'www', request.path))
-})
+APP.get('*', (req, res) => {
+    if (req.path.includes('..') || decodeURIComponent(req.path).includes('..')) {
+        res.status(403).send('Forbidden')
+    }
+    let filePath = '';
+
+    if(req.path.includes('images/')) {
+        filePath = path.join(__dirname, '..', req.path);
+    } else{
+        filePath = path.join(__dirname, 'www', req.path);
+    }
+
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath)
+    } else {
+        res.sendFile(path.join(__dirname, 'www', 'index.html'))
+    }
+});
 
 APP.post('/api/login', async (request, response) => {
     console.log(request.body)
@@ -169,7 +199,12 @@ APP.post('/api/register', async (request, response) => {
         email: true
     };
 
-    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
+    const [queries] = await pool.execute<RowDataPacket[]>(
+        'SELECT * FROM users ' +
+        'WHERE ID = ? OR ' +
+        'Email = ? OR ' +
+        'Phone = ? OR ' +
+        'SSN = ?', [username, email, phone, ssn]);
 
     validationResults.username = username.length>=8 && username.length<=20 && queries.length === 0;
     validationResults.password = validatePassword(password);
@@ -201,6 +236,16 @@ APP.post('/api/auth', authenticate,async (req:AuthenticatedRequest, res) => {
     res.json({ isAuthenticated: true, user: req.user });
 });
 
+APP.post('/api/auth/admin', authenticate,async (req:AuthenticatedRequest, res) => {
+    console.log(req.user);
+    const [queries] = await pool.execute<RowDataPacket[]>('SELECT Permission FROM users WHERE ID = ?', [(req.user as JwtPayload).username]);
+    if (queries[0].Permission != 1) {
+        res.sendStatus(403);
+        return;
+    }
+    res.json({ isAdmin: true, user: req.user });
+});
+
 // 登出路由，清除 JWT Token
 APP.post('/api/logout', (req: Request, res: Response) => {
     // 清除 Cookie 中的 authToken
@@ -216,10 +261,544 @@ APP.post('/api/logout', (req: Request, res: Response) => {
 
 APP.post('/api/get/userINFO', authenticate, async (req:AuthenticatedRequest, res) => {
     const username = (req.user as JwtPayload).username;
-    const [queries] = await pool.execute<RowDataPacket[]>('SELECT * FROM users WHERE ID = ?', [username]);
+    const [queries] = await pool.execute<RowDataPacket[]>(
+        'SELECT u.ID,u.SSN,u.Nickname,u.Phone,u.Email ' +
+        ' FROM users u WHERE ID = ?', [username]);
     res.json(queries[0]);
 })
 
+APP.post('/api/get/GameINFO', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT g.ID, g.Name, g.Platform, i.path AS Image\n' +
+            'FROM games g\n' +
+            'LEFT JOIN images i\n' +
+            'ON g.Image_ID = i.ID;'
+        );
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/ItemINFO', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT \n' +
+            'items.Title, \n' +
+            'items.Price, \n' +
+            'items.Quantity, \n' +
+            'items.Description, \n' +
+            'items.Seller_ID, \n' +
+            'items.Game_ID, \n' +
+            'images.path \n' +
+            'FROM items \n' +
+            'LEFT JOIN images ON items.Image_ID = images.ID \n' +
+            'WHERE items.ID = ?;',
+            [req.body.ID]
+        );
+        res.json(queries[0]);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/SimpleItemINFOs', async (req: AuthenticatedRequest, res) => {
+    try {
+        // 查詢遊戲資訊和圖片路徑
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT i.ID, i.title Name, i.Seller_ID Seller, i.Price, i.Quantity \n' +
+            'FROM items i\n' +
+            'WHERE Game_ID = ?;',
+            [req.body.game]
+        );
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching game info:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/Messages', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        // 查詢與該用戶相關的消息記錄
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT * ' +
+            'FROM messages ' +
+            'WHERE Sender_ID = ? OR Receiver_ID = ? ' +
+            'ORDER BY Sent_Time ASC;',
+            [user, user]
+        );
+
+        const result: {[username: string]: {Time: Date, Context: string, mode: boolean}[]} = {}
+        queries.forEach((query) => {
+            const key = query.Sender_ID === user ? query.Receiver_ID : query.Sender_ID;
+            const mode = query.Sender_ID === user;
+            if (!result[key]) {
+                result[key] = [];
+            }
+            result[key].push({
+                    Time: query.Sent_Time,
+                    Context: query.Context,
+                    mode: mode
+            });
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/add/messages', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+
+    try {
+        // 取得請求中的訊息內容
+        const { sender, receiver, content, timestamp } = req.body;
+
+        // 驗證必要欄位
+        if (!sender || !receiver || !content || !timestamp) {
+            res.status(400).json({ error: 'Missing required fields' });
+            return;
+        }
+
+        // 將 ISO 8601 格式的 timestamp 轉換為 MySQL 支援的格式
+        const formattedTimestamp = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ');
+
+        // 插入訊息到資料庫
+        const query = `
+            INSERT INTO messages (Sender_ID, Receiver_ID, Context, Sent_Time)
+            VALUES (?, ?, ?, ?)
+        `;
+        await pool.execute(query, [user, receiver, content, formattedTimestamp]);
+
+        // 廣播訊息給所有 WebSocket 客戶端
+        const message = {
+            sender: user,
+            receiver,
+            content,
+            timestamp,
+        };
+
+        clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify(message));
+            }
+        });
+        // 回傳成功的回應
+        res.status(200).json({ message: 'Message saved successfully' });
+    } catch (error) {
+        console.error('Error saving message:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+APP.post('/api/listItem', upload.single('image'), authenticate, async (req:AuthenticatedRequest, res) => {
+    const { name, price,quantity, description, game_id } = req.body;
+    const image = req.file;
+    const seller_id = (req.user as JwtPayload).username;
+    try {
+        const [imageResult] = await pool.execute<ResultSetHeader>(
+            'INSERT INTO images (path) VALUES (?)',
+            ['/' + image?.path]
+        );
+
+        const imageId = imageResult.insertId; // 正確取得 insertId
+
+        // 2. 插入商品到 items 表
+        await pool.execute(
+            `INSERT INTO items 
+            (Title, Price, Quantity, Description, Seller_ID, Game_ID, Image_ID) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [name, price, quantity, description, seller_id, game_id, imageId]
+        );
+
+        res.json({ success: true, message: '商品和圖片已成功接收！' });
+    } catch (error) {
+        console.error('資料插入失敗：', error);
+        res.status(500).json({ success: false, message: '商品上架失敗，請稍後再試！' });
+    }
+});
+
+APP.post('/api/get/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        // 查詢 wish、items 和 images 表格的購物車相關資料
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT 
+                i.ID AS id, 
+                i.Title AS name, 
+                i.Price AS price, 
+                w.Quantity AS quantity, 
+                img.path AS image, 
+                i.Seller_ID AS seller 
+             FROM wish AS w
+             JOIN items AS i ON w.Item_ID = i.ID
+             LEFT JOIN images AS img ON i.Image_ID = img.ID
+             WHERE w.User_ID = ?;`,
+            [user]
+        );
+
+        res.json(queries);
+        console.log(queries);
+    } catch (error) {
+        console.error('Error fetching shopping cart details:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/update/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { id, quantity } = req.body; // 從請求中取得 item ID 和更新後的數量
+    const user = (req.user as JwtPayload).username; // 從認證 token 中取得 User_ID
+
+    try {
+        // 檢查數據的合法性
+        if (!id || quantity == null || quantity < 0) {
+            res.status(400).json({ message: 'Invalid item ID or quantity' });
+        }
+
+        // 更新 wish 表格中的數量
+        const [result] = await pool.execute<ResultSetHeader>(
+            `UPDATE wish 
+             SET Quantity = ? 
+             WHERE User_ID = ? AND Item_ID = ?;`,
+            [quantity, user, id]
+        );
+
+        // 判斷是否有成功更新
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Item quantity updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Item not found in the shopping cart' });
+        }
+    } catch (error) {
+        console.error('Error updating item quantity:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+APP.post('/api/delete/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { id } = req.body; // 從請求中獲取要刪除的 Item_ID
+    const user = (req.user as JwtPayload).username; // 從認證 token 中獲取 User_ID
+
+    try {
+        // 執行刪除語句
+        const [result] = await pool.execute<ResultSetHeader>(
+            `DELETE FROM wish 
+             WHERE User_ID = ? AND Item_ID = ?;`,
+            [user, id]
+        );
+
+        // 判斷是否有成功刪除
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Item deleted successfully from the shopping cart' });
+        } else {
+            res.status(404).json({ message: 'Item not found in the shopping cart' });
+        }
+    } catch (error) {
+        console.error('Error deleting item from shopping cart:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+APP.post('/api/get/tableData', authenticate, async (req: AuthenticatedRequest, res) => {
+    try {
+        const { tableName } = req.body;
+
+        // 檢查 tableName 是否為允許的資料表
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(tableName)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 動態查詢資料表內容
+        const [queries] = await pool.query(`SELECT * FROM \`${tableName}\``);
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching table data:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.put('/api/:table/:id', authenticate, async (req, res) => {
+    try {
+        const { table, id } = req.params; // 獲取資料表名和主鍵 ID
+        const data = req.body; // 獲取要更新的數據
+
+        console.log(data);
+        console.log(table);
+        console.log(id);
+        // 檢查資料表名稱是否合法
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(table)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 動態生成 SQL 語句，安全地更新數據
+        const columns = Object.keys(data).map((key) => `\`${key}\` = ?`).join(', ');
+        const values = Object.values(data);
+
+        await pool.query(`UPDATE \`${table}\` SET ${columns} WHERE id = ?`, [...values, id]);
+        res.send('更新成功');
+    } catch (error) {
+        console.error('更新失敗：', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/:table', authenticate, async (req, res) => {
+    try {
+        const { table } = req.params; // 獲取資料表名稱
+        const data = req.body; // 獲取要新增的數據
+
+        // 檢查資料表名稱是否合法
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(table)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 動態生成 SQL 語句，安全地插入數據
+        const columns = Object.keys(data).map((key) => `\`${key}\``).join(', ');
+        const placeholders = Object.keys(data).map(() => '?').join(', ');
+        const values = Object.values(data);
+
+        await pool.query(`INSERT INTO \`${table}\` (${columns}) VALUES (${placeholders})`, values);
+        res.send('新增成功');
+    } catch (error) {
+        console.error('新增失敗：', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.delete('/api/:table/:id', authenticate, async (req, res) => {
+    try {
+        const { table, id } = req.params; // 獲取資料表名稱和 ID
+
+        // 檢查資料表名稱是否合法
+        const allowedTables = ['coupons', 'games', 'images', 'items', 'messages', 'orders', 'users', 'wish'];
+        if (!allowedTables.includes(table)) {
+            res.status(400).send('Invalid table name');
+            return;
+        }
+
+        // 刪除資料
+        await pool.query(`DELETE FROM \`${table}\` WHERE ID = ?`, [id]);
+        res.send('刪除成功');
+    } catch (error) {
+        console.error('刪除失敗：', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/add/shoppingCart', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    const {ID, Quantity} = req.body;
+    try {
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            'SELECT * FROM wish WHERE User_ID = ? AND Item_ID = ?', [user, ID]);
+
+
+        if (queries.length === 0) {
+            await pool.execute(
+                'INSERT INTO wish (User_ID, Item_ID, Quantity) VALUES (?, ?, ?)',
+                [user, ID, Quantity]
+            )
+        } else {
+            await pool.execute(
+                'UPDATE wish SET Quantity = Quantity + ? WHERE User_ID = ? AND Item_ID = ?',
+                [Quantity, user, ID]
+            )
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error adding item to cart:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/coupons', authenticate, async (req: AuthenticatedRequest, res) => {
+    try {
+        const userId = (req.user as JwtPayload).username; // 從認證中獲取用戶 ID
+
+        // 執行查詢，只返回當前用戶的有效優惠券
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT * 
+             FROM coupons
+             WHERE User_ID = ? 
+             AND Start_Date <= NOW() 
+             AND End_Date >= NOW()`,
+            [userId]
+        );
+
+        // 將結果返回給前端
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching coupons:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/add/order', authenticate, async (req: AuthenticatedRequest, res) => {
+    const userId = (req.user as JwtPayload).username; // 從認證中獲取用戶 ID
+    const { items, coupon, totalPrice } = req.body;
+
+    // 驗證請求數據
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        res.status(400).json({ error: '購物車內容無效' });
+        return;
+    }
+
+    if (!totalPrice || totalPrice <= 0) {
+        res.status(400).json({ error: '訂單總金額無效' });
+        return;
+    }
+
+    // 開啟資料庫連接
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 插入每個商品（如果多商品應循環插入）
+        for (const item of items) {
+            console.log(item);
+            await connection.execute(
+                `INSERT INTO orders (Date, State, Payment_Method, Payment_State, Coupon_ID, Item_ID, Quantity, Seller_ID, Buyer_ID)
+                 VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    1, // 訂單狀態
+                    '線上',
+                    '已付款',
+                    coupon || null,
+                    item.id,
+                    item.quantity,
+                    item.Seller_ID,
+                    userId
+                ]
+            );
+        }
+
+        // 清空該用戶的 `wish` 資料
+        await connection.execute(
+            `DELETE FROM wish WHERE User_ID = ?`,
+            [userId]
+        );
+
+        // 提交交易
+        await connection.commit();
+        connection.release();
+
+        res.json({ success: true});
+    } catch (error) {
+        console.error('Error creating order:', error);
+
+        // 發生錯誤時回滾交易
+        if (connection) {
+            await connection.rollback();
+            connection.release();
+        }
+
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+APP.post('/api/get/orders', authenticate, async (req: AuthenticatedRequest, res) => {
+    try {
+        const [orders] = await pool.execute(
+            `SELECT * FROM orders`
+        );
+        res.json(orders);
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+APP.post('/api/orders/complete', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { orderID } = req.body;
+
+    // 驗證資料
+    if (!orderID) {
+        res.status(400).json({ error: '缺少訂單 ID' });
+        return;
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 更新訂單狀態為已完成 (State = 2)
+        const [result] = await connection.execute(
+            'UPDATE orders SET State = 2 WHERE ID = ?',
+            [orderID]
+        );
+
+        await connection.commit();
+        res.json({ success: true, message: `訂單 ${orderID} 已標記為完成` });
+    } catch (error) {
+        console.error('Error marking order as complete:', error);
+        await connection.rollback();
+        res.status(500).json({ error: '無法標記訂單為完成' });
+    } finally {
+        connection.release();
+    }
+});
+
+APP.post('/api/orders/cancel', authenticate, async (req: AuthenticatedRequest, res) => {
+    const { orderID } = req.body;
+
+    // 驗證資料
+    if (!orderID) {
+        res.status(400).json({ error: '缺少訂單 ID' });
+        return;
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 更新訂單狀態為已取消 (State = 3)
+        const [result] = await connection.execute(
+            'UPDATE orders SET State = 3 WHERE ID = ?',
+            [orderID]
+        );
+
+        await connection.commit();
+        res.json({ success: true, message: `訂單 ${orderID} 已標記為取消` });
+    } catch (error) {
+        console.error('Error canceling order:', error);
+        await connection.rollback();
+        res.status(500).json({ error: '無法取消訂單' });
+    } finally {
+        connection.release();
+    }
+});
+
+APP.post('/api/get/MyItems', authenticate, async (req: AuthenticatedRequest, res) => {
+    const user = (req.user as JwtPayload).username;
+    try {
+        const [queries] = await pool.execute<RowDataPacket[]>(
+            `SELECT i.ID, i.Title, i.Price, i.Quantity, i.Description
+             FROM items i
+             WHERE i.Seller_ID = ?`,
+            [user]
+        );
+
+        res.json(queries);
+    } catch (error) {
+        console.error('Error fetching shopping cart details:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 // APP.listen(80)
 
@@ -227,7 +806,17 @@ const options = {
     key: fs.readFileSync('./ssl/cloudflare-origin.key'),
     cert: fs.readFileSync('./ssl/cloudflare-origin.pem'),
 };
+const server = https.createServer(options, APP);
+const wss = new WebSocket.Server({ server });
+let clients: any[] = [];
+wss.on('connection', (ws) => {
+    console.log('New client connected');
+    clients.push(ws);
 
-
+    ws.on('close', () => {
+        console.log('Client disconnected');
+        clients = clients.filter(client => client !== ws);
+    });
+});
 // 啟動 HTTPS 伺服器
-https.createServer(options, APP).listen(443);
+server.listen(443);

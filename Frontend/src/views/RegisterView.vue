@@ -1,4 +1,5 @@
 <template>
+  <ToolBar class="toolbar"/>
   <div class="register-container">
     <div class="register-card">
       <h1 class="register-title">Register</h1>
@@ -157,16 +158,17 @@ function register() {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1b2838, #2a475e);
+  font-family: 'Arial', sans-serif;
+  color: #c7d5e0;
 }
 
 /* 註冊卡片樣式 */
 .register-card {
-  background-color: #ffffff;
+  background-color: #1b2838;
   padding: 40px 30px;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 500px;
 }
@@ -175,7 +177,7 @@ function register() {
 .register-title {
   text-align: center;
   font-size: 2.5rem;
-  color: #2c3e50;
+  color: #c7d5e0;
   margin-bottom: 30px;
 }
 
@@ -196,21 +198,23 @@ function register() {
   display: block;
   margin-bottom: 8px;
   font-size: 1rem;
-  color: #34495e;
+  color: #c7d5e0;
 }
 
 /* 輸入框樣式 */
 .input-field {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #bdc3c7;
+  border: 1px solid #3c4f64;
   border-radius: 6px;
+  background-color: #16202d;
+  color: #c7d5e0;
   font-size: 1rem;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .input-field:focus {
-  border-color: #3498db;
+  border-color: #66c0f4;
   box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
   outline: none;
 }
@@ -235,11 +239,11 @@ function register() {
 
 /* 註冊按鈕特定樣式 */
 .register-btn {
-  background-color: #2ecc71;
+  background-color: #5caa47;
 }
 
 .register-btn:hover {
-  background-color: #27ae60;
+  background-color: #4b8a3c;
 }
 
 /* 響應式調整 */
