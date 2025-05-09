@@ -14,7 +14,7 @@
 
 1.將檔案下載下來
 ```bash
-git clone https://github.com/LucienRay/8591.git
+git clone https://github.com/LucienRay/GameTradeHub.git
 ```
 2.進入專案目錄
 ```bash
